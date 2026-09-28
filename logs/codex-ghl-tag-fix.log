@@ -1,0 +1,1387 @@
+warning: `--full-auto` is deprecated; use `--sandbox workspace-write` instead.
+Reading additional input from stdin...
+OpenAI Codex v0.144.4
+--------
+workdir: /root/ai-surfer-assets/projects/reason-to-reach-out-public
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: none
+reasoning summaries: none
+session id: 01a0e500-b4c7-7122-9969-4c4f41089ee2
+--------
+user
+Fix one live GHL race found during verification. Use TDD first and save RED output in logs/ghl-tag-race-red.log.
+
+Observed: feedback added `RTRO - Feedback: Yes`, then an immediate wording_copied event replaced the contact's tag array from a stale contact-search snapshot, removing the feedback tag. Do not update an existing contact by PUT-replacing all tags.
+
+Change existing-contact tagging to the LeadConnector additive tag endpoint `POST /contacts/{contactId}/tags` with `{tags:[...]}`. Then GET `/contacts/{contactId}` and verify every requested tag is present case-insensitively. Preserve contact creation tags. Add a mock test where the search result is stale and two sequential event writes still leave both tags. Update the mock router for the additive tag endpoint. Keep retry policy, notes, readbacks, anonymous reuse, and all other behavior. Run full tests and node --check. Do not call live GHL from tests and do not deploy.
+warning: Codex could not find bubblewrap on PATH. Install bubblewrap with your OS package manager. See the sandbox prerequisites: https://developers.openai.com/codex/concepts/sandboxing#prerequisites. Codex will use the bundled bubblewrap in the meantime.
+codex
+I’ll trace the existing GHL client and mock routes, add the stale-search race regression first, and capture its failing run verbatim in `logs/ghl-tag-race-red.log` before changing production code. Then I’ll implement additive tagging and run the full test and syntax checks without touching live GHL or deployment.
+exec
+/bin/bash -lc "ls -la && rg -n \"GHL|LeadConnector|contacts/.+tags|wording_copied|Feedback|contact.*tags|tags\" . --glob '"'!node_modules/**'"' --glob '"'!logs/**'"'" in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+ succeeded in 0ms:
+total 68
+drwxr-xr-x  9 root root 4096 Sep 27 22:33 .
+drwxr-xr-x 36 root root 4096 Sep 27 21:56 ..
+dr-xr-xr-x  2 root root   40 Sep 27 22:33 .agents
+dr-xr-xr-x  2 root root   40 Sep 27 22:33 .codex
+drwxr-xr-x  8 root root 4096 Sep 27 22:33 .git
+-rw-r--r--  1 root root 1718 Sep 27 22:21 GENERATION_FIX.md
+-rw-r--r--  1 root root 1349 Sep 27 22:29 GHL_LIVE_FIX.md
+-rw-r--r--  1 root root  938 Sep 27 22:33 GHL_TAG_FIX.md
+-rw-r--r--  1 root root 3701 Sep 27 22:09 HARDENING.md
+-rw-r--r--  1 root root  569 Sep 27 21:56 ORIGINAL_SHA256.txt
+-rw-r--r--  1 root root 2962 Sep 27 22:31 README_STAGE1.md
+-rw-r--r--  1 root root  234 Sep 27 22:32 RECOVERY.md
+-rw-r--r--  1 root root 7203 Sep 27 21:57 WORK_ORDER.md
+drwxr-xr-x  2 root root 4096 Sep 27 22:11 backend
+drwxr-xr-x  2 root root 4096 Sep 27 22:33 logs
+-rw-r--r--  1 root root  243 Sep 27 21:58 package.json
+drwxr-xr-x  2 root root 4096 Sep 27 22:04 public
+drwxr-xr-x  2 root root 4096 Sep 27 22:22 tests
+./HARDENING.md:18:2. Feedback exact UX:
+./HARDENING.md:22:With edits/No reveal optional "What's missing?" and submit; submit sends answer and replaces prompt with exact thanks. Do not reveal textarea for Yes. Backend accepts only Yes, With Edits, No and maps tags exactly RTRO - Feedback: Yes / With Edits / No.
+./HARDENING.md:26:4. GHL relay correctness and verification:
+./HARDENING.md:29:- all anonymous events must be logged as notes on the single exact RTRO Anonymous Feedback contact; known-contact events must be notes on that contact. Keep tags for wording/contact actions.
+./HARDENING.md:34:- Add mock-fetch adapter tests proving request bodies/tags/notes contain app-user fields and no prospect fields, known and anonymous routes, and readbacks. Never hit live GHL from automated tests.
+./GHL_LIVE_FIX.md:1:Fix two live-GHL defects found in Stage 1 integration testing. TDD first; save RED output to logs/ghl-live-defects-red.log. Work only in this repo; do not call live GHL from tests.
+./GHL_LIVE_FIX.md:3:Defect 1: GHL normalizes anonymous contact names to lowercase and returns name:null, firstName:"rtro", lastName:"anonymous feedback". The current case-sensitive anonymous match created two contacts. Make the anonymous record deterministic by assigning a stable reserved email `rtro-anonymous-feedback@reasontoreachout.invalid` on creation, searching exact email first, and retaining a case-insensitive legacy-name fallback so existing records can be adopted. Never send email to it. Tests must simulate GHL lowercasing and prove repeated anonymous events reuse one contact.
+./GHL_LIVE_FIX.md:5:Defect 2: two back-to-back live known-contact writes transiently returned non-2xx, then succeeded on manual retry. Add bounded automatic retry in the private GHL request helper for 429 and 5xx only: at most 3 total attempts with short exponential waits, honoring Retry-After when present but cap the wait. Never retry validation/auth 4xx. Add mock tests proving a 500 then success is retried, while 400 is not.
+./GHL_LIVE_FIX.md:7:Preserve exact write/readback verification, tags, notes, event validation, public behavior, and all existing tests. Update README verification note. Run all tests and node --check.
+./README_STAGE1.md:15:`RTRO_TEST_MODE=1` is the explicit safe local mode: events are accepted without contacting LeadConnector. Live event relay requires `GHL_API_KEY` and `GHL_LOCATION_ID` in the backend process environment. Tests always inject mocks and never write to GHL. Generation uses the installed `hermes` CLI with provider `openrouter` and model `openai/gpt-4.1-mini` by default. `HERMES_CLI` may select another executable path; `RTRO_HERMES_PROVIDER` and `RTRO_HERMES_MODEL` override the generation provider and model.
+./README_STAGE1.md:32:- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+./README_STAGE1.md:34:- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+./WORK_ORDER.md:19:- POST /api/rtro/event: strict event allowlist and per-type schemas; 60/IP/hour; same CORS. Use GHL_API_KEY and GHL_LOCATION_ID only from process env. Public code must contain no GHL credentials. Use LeadConnector API, Version 2021-07-28 or v3 where appropriate, browser-like UA, and verify writes by readback where practical. Prefix every tag with RTRO.
+./WORK_ORDER.md:20:- Allowed events: lead_capture, feedback, plan_generated, play_selected, channel_viewed, wording_copied, pdf_downloaded, contact_click.
+./WORK_ORDER.md:23:- Feedback: known email attaches note and RTRO - Feedback: Yes/With Edits/No. Anonymous feedback/events go to one reusable GHL contact named RTRO Anonymous Feedback or simplest equivalent. If email appears later, attach earlier session event summary to that contact. Wording copied tags known contact RTRO - Copied Wording. Contact clicks tag RTRO - Clicked Contact or RTRO - Clicked Mailbox Power.
+./WORK_ORDER.md:24:- Use dependency injection/mocks so tests never write to live GHL. Provide a documented explicit local test mode. The final live integration will be tested separately by the parent agent.
+./WORK_ORDER.md:31:- Privacy copy says situation text is sent to an AI service for generation; prospect details are never sent to GHL.
+./WORK_ORDER.md:35:- Feedback prompt above contact block: Yes as-is / With edits / No; conditional optional What's missing and submit; final thanks. Events include selected play, channel, score, source; known email if captured.
+./WORK_ORDER.md:36:- Track all specified behaviors, using anonymous sessionId until email known, then include email and lead capture reconciles earlier events. Plan generated relationship/stage/source; play selection rank; channel tab; copy wording; PDF; contact clicks phone/email/booking/video/Mailbox Power. Source from ?src= persisted for session, sanitized, all events, GHL source tag.
+./RECOVERY.md:1:Last checkpoint: 35 tests pass; live generation 200 in 28.16s; GHL transient retry and anonymous dedupe implemented
+./RECOVERY.md:2:Next: restart local backend, reconcile QA duplicates, verify GHL events, browser/PDF/mobile QA, publish static folder
+./GHL_TAG_FIX.md:1:Fix one live GHL race found during verification. Use TDD first and save RED output in logs/ghl-tag-race-red.log.
+./GHL_TAG_FIX.md:3:Observed: feedback added `RTRO - Feedback: Yes`, then an immediate wording_copied event replaced the contact's tag array from a stale contact-search snapshot, removing the feedback tag. Do not update an existing contact by PUT-replacing all tags.
+./GHL_TAG_FIX.md:5:Change existing-contact tagging to the LeadConnector additive tag endpoint `POST /contacts/{contactId}/tags` with `{tags:[...]}`. Then GET `/contacts/{contactId}` and verify every requested tag is present case-insensitively. Preserve contact creation tags. Add a mock test where the search result is stale and two sequential event writes still leave both tags. Update the mock router for the additive tag endpoint. Keep retry policy, notes, readbacks, anonymous reuse, and all other behavior. Run full tests and node --check. Do not call live GHL from tests and do not deploy.
+./backend/ghl.js:5:const anonymousName = 'RTRO Anonymous Feedback';
+./backend/ghl.js:11:export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+./backend/ghl.js:14:  if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+./backend/ghl.js:28:      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
+./backend/ghl.js:33:  const tagsFor = (event) => {
+./backend/ghl.js:34:    const tags=[];
+./backend/ghl.js:35:    if (event.type === 'lead_capture') tags.push('RTRO - PDF Download');
+./backend/ghl.js:36:    if (event.source) tags.push(`RTRO - Source: ${sanitizeSource(event.source)}`);
+./backend/ghl.js:37:    if (event.consent === true) tags.push('RTRO - Consent Yes');
+./backend/ghl.js:38:    if (['Mailed card','Gift/leave-behind'].includes(event.channel)) tags.push('RTRO - Physical Mail Interest');
+./backend/ghl.js:39:    if (event.type === 'feedback') tags.push(`RTRO - Feedback: ${event.answer}`);
+./backend/ghl.js:40:    if (event.type === 'wording_copied') tags.push('RTRO - Copied Wording');
+./backend/ghl.js:41:    if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+./backend/ghl.js:42:    return [...new Set(tags)];
+./backend/ghl.js:61:    if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+./backend/ghl.js:66:    const tags=tagsFor(event);
+./backend/ghl.js:69:        ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+./backend/ghl.js:70:        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+./backend/ghl.js:72:      if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+./backend/ghl.js:75:    if (tags.length) {
+./backend/ghl.js:76:      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+./backend/ghl.js:77:      if (updated?.id !== contact.id) throw new Error('LeadConnector contact update mismatch.');
+./backend/ghl.js:84:    if (!created?.id) throw new Error('LeadConnector note create returned no target.');
+./backend/ghl.js:86:    if (readback?.id !== created.id || readback.contactId && readback.contactId !== contactId) throw new Error('LeadConnector note readback mismatch.');
+./backend/app.js:15:  wording_copied: baseEvent,
+./tests/ghl.test.js:40:test('anonymous and known events use exact contacts, notes, tags, and readbacks', async () => {
+./tests/ghl.test.js:42:    { id:'wrong', name:'RTRO Anonymous Feedback Copy', firstName:'RTRO', lastName:'Anonymous' },
+./tests/ghl.test.js:43:    { id:'anon', name:'RTRO Anonymous Feedback', firstName:'RTRO Anonymous', lastName:'Feedback', tags:[] },
+./tests/ghl.test.js:44:    { id:'near', email:'person+old@example.com', tags:[] },
+./tests/ghl.test.js:45:    { id:'known', email:'person@example.com', tags:['Existing'] }
+./tests/ghl.test.js:49:  await adapter.record(event({ type:'wording_copied', email:'PERSON@example.com' }));
+./tests/ghl.test.js:58:  assert.ok(mock.contacts.get('anon').tags.includes('RTRO - Feedback: With Edits'));
+./tests/ghl.test.js:59:  assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+./tests/ghl.test.js:68:  assert.deepEqual(create.body.tags.sort(), ['RTRO - Consent Yes','RTRO - PDF Download','RTRO - Physical Mail Interest','RTRO - Source: Spring Campaign'].sort());
+./tests/ghl.test.js:82:  await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+./tests/ghl.test.js:112:  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
+./tests/ghl.test.js:121:  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
+./tests/ghl.test.js:146:  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
+./tests/public.test.js:16:  assert.doesNotMatch(combined, /sslip\.io|\/api\/micro-ai|GHL_API_KEY|GHL_LOCATION_ID|Bearer\s+[A-Za-z0-9]/i);
+./tests/public.test.js:22:  assert.doesNotMatch(combined, /Email this plan|setup required|Owner tools|Export GHL|CSV/i);
+./tests/public.test.js:29:  assert.match(html, /prospect details are never sent to GHL/i);
+./tests/public.test.js:44:  for (const type of ['lead_capture','feedback','plan_generated','play_selected','channel_viewed','wording_copied','pdf_downloaded','contact_click']) assert.match(js, new RegExp(type));
+./public/index.html:20:  <div class="two"><div class="field"><label for="priority">What matters to them?</label><input id="priority"></div><div class="field"><label for="lastContact">Time since contact</label><input id="lastContact"></div></div><div class="field"><label for="trigger">Verified trigger (optional)</label><textarea id="trigger"></textarea></div><div class="field"><label for="nextStep">Desired next step</label><input id="nextStep"></div><button class="primary" id="submitButton">Build four outreach plays</button><p class="privacy">Prospect details are never sent to GHL. Only your contact details entered for PDF download and anonymous interaction metadata are relayed.</p>
+./public/app.js:57:  $('#copyButton').onclick=async()=>{try{if(!navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');await navigator.clipboard.writeText($('#messageText').textContent);$('#copyButton').textContent='Copied';track('wording_copied');setTimeout(()=>$('#copyButton').textContent='Copy wording',1200);}catch{const selection=window.getSelection?.();const range=document.createRange?.();if(selection&&range){range.selectNodeContents($('#messageText'));selection.removeAllRanges();selection.addRange(range);}$('#copyButton').textContent='Select and copy';}};
+./public/app.js:61:  function finishFeedback(){ $('#feedbackPrompt').style.display='none'; $('#feedbackThanks').textContent='Thanks — this helps.'; }
+./public/app.js:62:  document.querySelectorAll('[data-feedback]').forEach(b=>b.onclick=()=>{state.feedback=b.dataset.feedback;if(state.feedback==='Yes'){track('feedback',{answer:'Yes',score:state.data.plays[state.selected].rubric.total});finishFeedback();return;}$('#feedbackDetail').classList.add('show');$('#feedbackMissing').focus();});$('#feedbackSubmit').onclick=()=>{track('feedback',{answer:state.feedback,missing:$('#feedbackMissing').value.trim(),score:state.data.plays[state.selected].rubric.total});finishFeedback();};
+
+exec
+/bin/bash -lc "sed -n '1,240p' backend/ghl.js && sed -n '1,260p' tests/ghl.test.js && cat package.json && find . -name AGENTS.md -print" in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+ succeeded in 0ms:
+import { sanitizeSource } from './core.js';
+
+const API = 'https://services.leadconnectorhq.com';
+const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+const anonymousName = 'RTRO Anonymous Feedback';
+const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
+const maxAttempts = 3;
+const retryBaseMs = 50;
+const retryWaitCapMs = 1_000;
+
+export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+  const sessionSummaries = new Map();
+  if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+  if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+  const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
+  const retryAfterMs = (response) => {
+    const value=response.headers?.get?.('retry-after');
+    if (!value) return null;
+    const seconds=Number(value);
+    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
+    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
+  };
+  async function request(path, options={}) {
+    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
+      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+      if (response.ok) return response.status === 204 ? {} : response.json();
+      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
+      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
+      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
+      await new Promise((resolve)=>setTimeout(resolve,wait));
+    }
+  }
+  const tagsFor = (event) => {
+    const tags=[];
+    if (event.type === 'lead_capture') tags.push('RTRO - PDF Download');
+    if (event.source) tags.push(`RTRO - Source: ${sanitizeSource(event.source)}`);
+    if (event.consent === true) tags.push('RTRO - Consent Yes');
+    if (['Mailed card','Gift/leave-behind'].includes(event.channel)) tags.push('RTRO - Physical Mail Interest');
+    if (event.type === 'feedback') tags.push(`RTRO - Feedback: ${event.answer}`);
+    if (event.type === 'wording_copied') tags.push('RTRO - Copied Wording');
+    if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+    return [...new Set(tags)];
+  };
+  async function searchContacts(queryValue) {
+    const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+    return (await request(`/contacts/?${query}`)).contacts || [];
+  }
+  async function findExact(event) {
+    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
+    if (reserved) return reserved;
+    const expected=anonymousName.toLowerCase();
+    return (await searchContacts(anonymousName)).find((contact)=>{
+      const fullName=String(contact.name || '').trim().toLowerCase();
+      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
+      return fullName === expected || splitName === expected;
+    });
+  }
+  async function readContact(id) {
+    const result=await request(`/contacts/${id}`);
+    if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+    return result.contact;
+  }
+  async function upsert(event) {
+    let contact=await findExact(event);
+    const tags=tagsFor(event);
+    if (!contact) {
+      const body=event.email
+        ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+      contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+      if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+      return readContact(contact.id);
+    }
+    if (tags.length) {
+      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+      if (updated?.id !== contact.id) throw new Error('LeadConnector contact update mismatch.');
+      contact=await readContact(contact.id);
+    }
+    return contact;
+  }
+  async function addNote(contactId, body) {
+    const created=(await request(`/contacts/${contactId}/notes`, { method:'POST', body:JSON.stringify({ body }) })).note;
+    if (!created?.id) throw new Error('LeadConnector note create returned no target.');
+    const readback=(await request(`/contacts/${contactId}/notes/${created.id}`)).note;
+    if (readback?.id !== created.id || readback.contactId && readback.contactId !== contactId) throw new Error('LeadConnector note readback mismatch.');
+  }
+  const eventNote = (event) => [
+    `RTRO event: ${event.type}`,
+    `Timestamp: ${event.timestamp}`,
+    `Source: ${sanitizeSource(event.source)}`,
+    ...(event.selectedPlay ? [`Selected play: ${event.selectedPlay}`] : []),
+    ...(event.channel ? [`Recommended channel: ${event.channel}`] : []),
+    ...(event.type === 'lead_capture' ? [`Consent: ${event.consent ? 'Yes' : 'No'}`,`App user: ${event.firstName}`,`App user email: ${event.email}`,...(event.company ? [`App user company: ${event.company}`] : [])] : []),
+    ...(event.type === 'feedback' ? [`Answer: ${event.answer}`,...(event.missing ? [`What's missing: ${event.missing}`] : [])] : []),
+    ...(event.type === 'contact_click' ? [`Target: ${event.target}`] : [])
+  ].join('\n');
+  return { record:async(event)=>{
+    const prior=sessionSummaries.get(event.sessionId) || [];
+    const contact=await upsert(event);
+    if (event.email && prior.length) {
+      await addNote(contact.id,`Earlier anonymous RTRO session activity:\n${prior.join('\n\n')}`);
+      sessionSummaries.delete(event.sessionId);
+    }
+    const note=eventNote(event);
+    await addNote(contact.id,note);
+    if (!event.email) sessionSummaries.set(event.sessionId,[...prior,note].slice(-30));
+    return { ok:true };
+  } };
+}
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createGhlAdapter } from '../backend/ghl.js';
+
+function mockGhl(seed = []) {
+  const contacts = new Map(seed.map((contact) => [contact.id, structuredClone(contact)]));
+  const calls = [];
+  let contactNumber = seed.length;
+  let noteNumber = 0;
+  const notes = new Map();
+  const fetchImpl = async (url, options = {}) => {
+    const parsed = new URL(url); const method = options.method || 'GET';
+    const body = options.body ? JSON.parse(options.body) : undefined;
+    calls.push({ method, path:`${parsed.pathname}${parsed.search}`, body });
+    const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+    if (method === 'GET' && parsed.pathname === '/contacts/') {
+      const query = (parsed.searchParams.get('query') || '').toLowerCase();
+      return response(200, { contacts:[...contacts.values()].filter((c) => {
+        const splitName=`${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
+        return JSON.stringify(c).toLowerCase().includes(query) || splitName.includes(query);
+      }) });
+    }
+    if (method === 'POST' && parsed.pathname === '/contacts/') {
+      const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+    }
+    const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+    if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+    if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
+    const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+    if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+    const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+    if (noteMatch && method === 'GET') return notes.has(noteMatch[2]) ? response(200,{ note:notes.get(noteMatch[2]) }) : response(404,{});
+    return response(404, {});
+  };
+  return { fetchImpl, calls, contacts, notes };
+}
+
+const event = (overrides={}) => ({ type:'channel_viewed', sessionId:'session-12345678', timestamp:'2026-09-27T12:00:00.000Z', source:'Spring Campaign', selectedPlay:'Decision guide', channel:'Email', ...overrides });
+
+test('anonymous and known events use exact contacts, notes, tags, and readbacks', async () => {
+  const mock = mockGhl([
+    { id:'wrong', name:'RTRO Anonymous Feedback Copy', firstName:'RTRO', lastName:'Anonymous' },
+    { id:'anon', name:'RTRO Anonymous Feedback', firstName:'RTRO Anonymous', lastName:'Feedback', tags:[] },
+    { id:'near', email:'person+old@example.com', tags:[] },
+    { id:'known', email:'person@example.com', tags:['Existing'] }
+  ]);
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+  await adapter.record(event({ type:'feedback', answer:'With Edits', missing:'Shorter wording' }));
+  await adapter.record(event({ type:'wording_copied', email:'PERSON@example.com' }));
+  const posts = mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path));
+  assert.equal(posts[0].path, '/contacts/anon/notes');
+  assert.ok(posts.slice(1).every((call) => call.path === '/contacts/known/notes'));
+  assert.match(posts[0].body.body, /With Edits|Shorter wording|Decision guide|Email|Spring Campaign/);
+  assert.ok(posts.some((call) => /Earlier anonymous RTRO session activity/.test(call.body.body)));
+  assert.ok(mock.calls.some((call) => call.method === 'GET' && call.path === '/contacts/anon'));
+  assert.ok(mock.calls.some((call) => call.method === 'GET' && call.path === '/contacts/known'));
+  assert.equal(mock.calls.filter((call) => call.method === 'GET' && /\/notes\/n\d+$/.test(call.path)).length, posts.length);
+  assert.ok(mock.contacts.get('anon').tags.includes('RTRO - Feedback: With Edits'));
+  assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+});
+
+test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+  const mock = mockGhl();
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+  await adapter.record(event({ type:'lead_capture', email:'owner@example.com', firstName:'Avery', company:'Sender Co', consent:true, source:'Spring Campaign', selectedPlay:'Capacity planning', channel:'Mailed card' }));
+  const create = mock.calls.find((call) => call.method === 'POST' && call.path === '/contacts/');
+  assert.equal(create.body.source, 'Spring Campaign');
+  assert.deepEqual(create.body.tags.sort(), ['RTRO - Consent Yes','RTRO - PDF Download','RTRO - Physical Mail Interest','RTRO - Source: Spring Campaign'].sort());
+  const note = mock.calls.find((call) => call.method === 'POST' && /\/notes$/.test(call.path)).body.body;
+  for (const value of ['Consent: Yes','Source: Spring Campaign','Selected play: Capacity planning','Recommended channel: Mailed card','Timestamp: 2026-09-27T12:00:00.000Z']) assert.match(note, new RegExp(value));
+  assert.doesNotMatch(JSON.stringify(mock.calls), /prospectName|prospectRole|situation|priority|trigger|desiredNextStep/);
+});
+
+test('write/readback failure rejects the relay operation', async () => {
+  const mock = mockGhl();
+  const fetchImpl = async (url, options) => {
+    const result = await mock.fetchImpl(url, options);
+    if ((options?.method || 'GET') === 'GET' && /\/contacts\/c1$/.test(new URL(url).pathname)) return { ok:false, status:500, json:async()=>({}) };
+    return result;
+  };
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+  await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+  assert.equal(mock.calls.filter((call) => call.method === 'GET' && call.path === '/contacts/c1').length, 3);
+});
+
+test('lowercased anonymous contacts are reused by their reserved email', async () => {
+  const mock = mockGhl();
+  const fetchImpl = async (url, options = {}) => {
+    const parsed = new URL(url);
+    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
+      const body = JSON.parse(options.body);
+      options = {
+        ...options,
+        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
+      };
+    }
+    return mock.fetchImpl(url, options);
+  };
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+
+  await adapter.record(event({ type:'feedback', answer:'Yes' }));
+  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
+
+  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
+  assert.equal(creates.length, 1);
+  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
+  assert.equal(mock.contacts.size, 1);
+  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
+});
+
+test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
+  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+  await adapter.record(event({ type:'feedback', answer:'No' }));
+
+  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
+  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
+  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
+  assert.equal(new URL(`https://example.test${searches[0].path}`).searchParams.get('query'), 'rtro-anonymous-feedback@reasontoreachout.invalid');
+  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
+});
+
+test('transient 500 is retried and then succeeds', async () => {
+  const mock = mockGhl();
+  let attempts = 0;
+  const fetchImpl = async (url, options) => {
+    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
+    return mock.fetchImpl(url, options);
+  };
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+
+  await adapter.record(event({ email:'retry@example.com' }));
+
+  assert.equal(attempts, 6);
+});
+
+test('validation 400 is not retried', async () => {
+  let attempts = 0;
+  const fetchImpl = async () => {
+    attempts += 1;
+    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
+  };
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+
+  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
+  assert.equal(attempts, 1);
+});
+{
+  "name": "reason-to-reach-out-stage1",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test --test-concurrency=1",
+    "start": "node backend/server.js"
+  }
+}
+
+codex
+The race is exactly in `upsert`: it merges requested tags into `contact.tags` from search, then PUTs that whole array. I’m adding a regression whose search endpoint deliberately keeps returning an empty-tag snapshot while the contact readback reflects current server state; this reproduces the live timing failure deterministically.
+apply patch
+patch: completed
+/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+exec
+/bin/bash -lc "node --test --test-concurrency=1 --test-name-pattern='additive tagging preserves sequential event tags' tests/ghl.test.js 2>&1 | tee logs/ghl-tag-race-red.log; test "'${PIPESTATUS[0]} -ne 0' in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+ succeeded in 214ms:
+TAP version 13
+# Subtest: tests/ghl.test.js
+not ok 1 - tests/ghl.test.js
+  ---
+  duration_ms: 110.88929
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 126.529723
+
+exec
+/bin/bash -lc 'node --test --test-concurrency=1 tests/ghl.test.js 2>&1 | tee logs/ghl-tag-race-red.log; test ${PIPESTATUS[0]} -ne 0' in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+ succeeded in 429ms:
+# Subtest: tests/ghl.test.js
+not ok 1 - tests/ghl.test.js
+  ---
+  duration_ms: 339.277441
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 351.773735
+
+exec
+/bin/bash -lc 'node --test --test-isolation=none --test-concurrency=1 tests/ghl.test.js 2>&1 | tee logs/ghl-tag-race-red.log; test ${PIPESTATUS[0]} -ne 0' in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+ succeeded in 0ms:
+node: bad option: --test-isolation=none
+
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+exec
+/bin/bash -lc 'node tests/ghl.test.js 2>&1 | tee logs/ghl-tag-race-red.log; test ${PIPESTATUS[0]} -ne 0' in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+ succeeded in 337ms:
+# Subtest: write/readback failure rejects the relay operation
+ok 4 - write/readback failure rejects the relay operation
+  ---
+  duration_ms: 152.605206
+  type: 'test'
+  ...
+# Subtest: lowercased anonymous contacts are reused by their reserved email
+ok 5 - lowercased anonymous contacts are reused by their reserved email
+  ---
+  duration_ms: 1.915862
+  type: 'test'
+  ...
+# Subtest: case-insensitive legacy anonymous name fallback adopts an existing contact
+ok 6 - case-insensitive legacy anonymous name fallback adopts an existing contact
+  ---
+  duration_ms: 1.073547
+  type: 'test'
+  ...
+# Subtest: transient 500 is retried and then succeeds
+ok 7 - transient 500 is retried and then succeeds
+  ---
+  duration_ms: 81.426091
+  type: 'test'
+  ...
+# Subtest: validation 400 is not retried
+ok 8 - validation 400 is not retried
+  ---
+  duration_ms: 0.577355
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 7
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 258.341039
+
+codex
+RED is now captured with the precise lost-tag assertion: after the second event, `RTRO - Feedback: Yes` is absent. I’m replacing only the existing-contact tag write; creation still sends its initial `tags`, and the subsequent GET will validate all tags requested by that event without trusting the POST response shape.
+apply patch
+patch: completed
+/root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 2c58eb98ef44b31ee6aa7320d8332a177cc26e92..b3f619d32376e885b9e2c91904a9fb1116a16551
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -73,9 +73,10 @@
+       return readContact(contact.id);
+     }
+     if (tags.length) {
+-      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+-      if (updated?.id !== contact.id) throw new Error('LeadConnector contact update mismatch.');
++      await request(`/contacts/${contact.id}/tags`, { method:'POST', body:JSON.stringify({ tags }) });
+       contact=await readContact(contact.id);
++      const readbackTags=new Set((contact.tags || []).map((tag)=>String(tag).toLowerCase()));
++      if (!tags.every((tag)=>readbackTags.has(tag.toLowerCase()))) throw new Error('LeadConnector contact tag readback mismatch.');
+     }
+     return contact;
+   }
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 2c58eb98ef44b31ee6aa7320d8332a177cc26e92..b3f619d32376e885b9e2c91904a9fb1116a16551
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -73,9 +73,10 @@
+       return readContact(contact.id);
+     }
+     if (tags.length) {
+-      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+-      if (updated?.id !== contact.id) throw new Error('LeadConnector contact update mismatch.');
++      await request(`/contacts/${contact.id}/tags`, { method:'POST', body:JSON.stringify({ tags }) });
+       contact=await readContact(contact.id);
++      const readbackTags=new Set((contact.tags || []).map((tag)=>String(tag).toLowerCase()));
++      if (!tags.every((tag)=>readbackTags.has(tag.toLowerCase()))) throw new Error('LeadConnector contact tag readback mismatch.');
+     }
+     return contact;
+   }
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+exec
+/bin/bash -lc 'node tests/ghl.test.js && npm test && for file in backend/*.js public/*.js tests/*.js; do node --check "$file" || exit 1; done' in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 2c58eb98ef44b31ee6aa7320d8332a177cc26e92..b3f619d32376e885b9e2c91904a9fb1116a16551
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -73,9 +73,10 @@
+       return readContact(contact.id);
+     }
+     if (tags.length) {
+-      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+-      if (updated?.id !== contact.id) throw new Error('LeadConnector contact update mismatch.');
++      await request(`/contacts/${contact.id}/tags`, { method:'POST', body:JSON.stringify({ tags }) });
+       contact=await readContact(contact.id);
++      const readbackTags=new Set((contact.tags || []).map((tag)=>String(tag).toLowerCase()));
++      if (!tags.every((tag)=>readbackTags.has(tag.toLowerCase()))) throw new Error('LeadConnector contact tag readback mismatch.');
+     }
+     return contact;
+   }
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+ succeeded in 1930ms:
+TAP version 13
+# Subtest: anonymous and known events use exact contacts, notes, tags, and readbacks
+ok 1 - anonymous and known events use exact contacts, notes, tags, and readbacks
+  ---
+  duration_ms: 7.666347
+  type: 'test'
+  ...
+# Subtest: additive tagging preserves sequential event tags when contact search is stale
+ok 2 - additive tagging preserves sequential event tags when contact search is stale
+  ---
+  duration_ms: 2.77304
+  type: 'test'
+  ...
+# Subtest: lead capture uses sanitized source and writes structured app-user-only note
+ok 3 - lead capture uses sanitized source and writes structured app-user-only note
+  ---
+  duration_ms: 0.995831
+  type: 'test'
+  ...
+# Subtest: write/readback failure rejects the relay operation
+ok 4 - write/readback failure rejects the relay operation
+  ---
+  duration_ms: 152.831339
+  type: 'test'
+  ...
+# Subtest: lowercased anonymous contacts are reused by their reserved email
+ok 5 - lowercased anonymous contacts are reused by their reserved email
+  ---
+  duration_ms: 1.865867
+  type: 'test'
+  ...
+# Subtest: case-insensitive legacy anonymous name fallback adopts an existing contact
+ok 6 - case-insensitive legacy anonymous name fallback adopts an existing contact
+  ---
+  duration_ms: 1.0591
+  type: 'test'
+  ...
+# Subtest: transient 500 is retried and then succeeds
+ok 7 - transient 500 is retried and then succeeds
+  ---
+  duration_ms: 78.779808
+  type: 'test'
+  ...
+# Subtest: validation 400 is not retried
+ok 8 - validation 400 is not retried
+  ---
+  duration_ms: 0.734271
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 256.370398
+
+> reason-to-reach-out-stage1@1.0.0 test
+> node --test --test-concurrency=1
+
+TAP version 13
+# Subtest: tests/backend.test.js
+ok 1 - tests/backend.test.js
+  ---
+  duration_ms: 136.546246
+  type: 'test'
+  ...
+# Subtest: tests/core.test.js
+ok 2 - tests/core.test.js
+  ---
+  duration_ms: 86.489165
+  type: 'test'
+  ...
+# Subtest: tests/ghl.test.js
+ok 3 - tests/ghl.test.js
+  ---
+  duration_ms: 347.053244
+  type: 'test'
+  ...
+# Subtest: tests/hermes.test.js
+ok 4 - tests/hermes.test.js
+  ---
+  duration_ms: 90.481828
+  type: 'test'
+  ...
+# Subtest: tests/public.test.js
+ok 5 - tests/public.test.js
+  ---
+  duration_ms: 112.845867
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 804.687629
+
+codex
+The regression is green with additive writes, and the full suite passes. I’m doing a final diff and artifact check now to ensure the RED log contains the original failure and that no unrelated files or live/deploy paths were touched.
+exec
+/bin/bash -lc "git status --short && git diff -- backend/ghl.js tests/ghl.test.js && sed -n '1,120p' logs/ghl-tag-race-red.log && git diff --check" in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+ succeeded in 0ms:
+ M backend/ghl.js
+ M tests/ghl.test.js
+?? logs/codex-ghl-tag-fix.log
+?? logs/ghl-tag-race-red.log
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 2c58eb9..b3f619d 100644
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -73,9 +73,10 @@ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId
+       return readContact(contact.id);
+     }
+     if (tags.length) {
+-      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+-      if (updated?.id !== contact.id) throw new Error('LeadConnector contact update mismatch.');
++      await request(`/contacts/${contact.id}/tags`, { method:'POST', body:JSON.stringify({ tags }) });
+       contact=await readContact(contact.id);
++      const readbackTags=new Set((contact.tags || []).map((tag)=>String(tag).toLowerCase()));
++      if (!tags.every((tag)=>readbackTags.has(tag.toLowerCase()))) throw new Error('LeadConnector contact tag readback mismatch.');
+     }
+     return contact;
+   }
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527..930a16d 100644
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@ function mockGhl(seed = []) {
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@ test('anonymous and known events use exact contacts, notes, tags, and readbacks'
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+TAP version 13
+# Subtest: anonymous and known events use exact contacts, notes, tags, and readbacks
+ok 1 - anonymous and known events use exact contacts, notes, tags, and readbacks
+  ---
+  duration_ms: 7.017999
+  type: 'test'
+  ...
+# Subtest: additive tagging preserves sequential event tags when contact search is stale
+not ok 2 - additive tagging preserves sequential event tags when contact search is stale
+  ---
+  duration_ms: 3.605967
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:69:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+        'RTRO - Copied Wording',
+    -   'RTRO - Feedback: Yes',
+        'RTRO - Source: Spring Campaign'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'RTRO - Copied Wording'
+    1: 'RTRO - Feedback: Yes'
+    2: 'RTRO - Source: Spring Campaign'
+  actual:
+    0: 'RTRO - Copied Wording'
+    1: 'RTRO - Source: Spring Campaign'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:85:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: lead capture uses sanitized source and writes structured app-user-only note
+ok 3 - lead capture uses sanitized source and writes structured app-user-only note
+  ---
+  duration_ms: 1.161934
+  type: 'test'
+  ...
+# Subtest: write/readback failure rejects the relay operation
+ok 4 - write/readback failure rejects the relay operation
+  ---
+  duration_ms: 152.605206
+  type: 'test'
+  ...
+# Subtest: lowercased anonymous contacts are reused by their reserved email
+ok 5 - lowercased anonymous contacts are reused by their reserved email
+  ---
+  duration_ms: 1.915862
+  type: 'test'
+  ...
+# Subtest: case-insensitive legacy anonymous name fallback adopts an existing contact
+ok 6 - case-insensitive legacy anonymous name fallback adopts an existing contact
+  ---
+  duration_ms: 1.073547
+  type: 'test'
+  ...
+# Subtest: transient 500 is retried and then succeeds
+ok 7 - transient 500 is retried and then succeeds
+  ---
+  duration_ms: 81.426091
+  type: 'test'
+  ...
+# Subtest: validation 400 is not retried
+ok 8 - validation 400 is not retried
+  ---
+  duration_ms: 0.577355
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 7
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 258.341039
+
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 2c58eb98ef44b31ee6aa7320d8332a177cc26e92..b3f619d32376e885b9e2c91904a9fb1116a16551
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -73,9 +73,10 @@
+       return readContact(contact.id);
+     }
+     if (tags.length) {
+-      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+-      if (updated?.id !== contact.id) throw new Error('LeadConnector contact update mismatch.');
++      await request(`/contacts/${contact.id}/tags`, { method:'POST', body:JSON.stringify({ tags }) });
+       contact=await readContact(contact.id);
++      const readbackTags=new Set((contact.tags || []).map((tag)=>String(tag).toLowerCase()));
++      if (!tags.every((tag)=>readbackTags.has(tag.toLowerCase()))) throw new Error('LeadConnector contact tag readback mismatch.');
+     }
+     return contact;
+   }
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+codex
+Implemented the live GHL tag-race fix.
+
+- Existing contacts now use additive `POST /contacts/{contactId}/tags`.
+- Added GET readback verifying all requested tags case-insensitively.
+- Contact creation still includes initial tags.
+- Updated mock router for additive tags.
+- Added stale-search regression proving sequential feedback and wording events retain both tags.
+- Saved expected RED output to [ghl-tag-race-red.log](/root/ai-surfer-assets/projects/reason-to-reach-out-public/logs/ghl-tag-race-red.log).
+- Full test suite passes.
+- All backend, public, and test JavaScript passes `node --check`.
+- No live GHL calls or deployment performed.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 2c58eb98ef44b31ee6aa7320d8332a177cc26e92..b3f619d32376e885b9e2c91904a9fb1116a16551
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -73,9 +73,10 @@
+       return readContact(contact.id);
+     }
+     if (tags.length) {
+-      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+-      if (updated?.id !== contact.id) throw new Error('LeadConnector contact update mismatch.');
++      await request(`/contacts/${contact.id}/tags`, { method:'POST', body:JSON.stringify({ tags }) });
+       contact=await readContact(contact.id);
++      const readbackTags=new Set((contact.tags || []).map((tag)=>String(tag).toLowerCase()));
++      if (!tags.every((tag)=>readbackTags.has(tag.toLowerCase()))) throw new Error('LeadConnector contact tag readback mismatch.');
+     }
+     return contact;
+   }
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index 11d7527d82c3e66779d164a29d50f26a23f0e2c2..930a16dba124af4740b9704daf65f99adc254b47
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -26,6 +26,13 @@
+     const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+     if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+     if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
++    const tagsMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/tags$/);
++    if (tagsMatch && method === 'POST') {
++      const contact=contacts.get(tagsMatch[1]);
++      if (!contact) return response(404, {});
++      contact.tags=[...new Set([...(contact.tags || []),...(body.tags || [])])];
++      return response(200, { contact });
++    }
+     const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+     if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+     const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+@@ -59,6 +66,27 @@
+   assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+ });
+ 
++test('additive tagging preserves sequential event tags when contact search is stale', async () => {
++  const mock = mockGhl([{ id:'known', email:'person@example.com', tags:[] }]);
++  const staleSearchContact = { id:'known', email:'person@example.com', tags:[] };
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'GET' && parsed.pathname === '/contacts/') {
++      mock.calls.push({ method:'GET', path:`${parsed.pathname}${parsed.search}`, body:undefined });
++      return { ok:true, status:200, json:async()=>({ contacts:[structuredClone(staleSearchContact)] }) };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes', email:'person@example.com' }));
++  await adapter.record(event({ type:'wording_copied', email:'person@example.com' }));
++
++  assert.deepEqual(mock.contacts.get('known').tags.sort(), ['RTRO - Copied Wording','RTRO - Feedback: Yes','RTRO - Source: Spring Campaign'].sort());
++  assert.equal(mock.calls.filter((call) => call.method === 'PUT' && call.path === '/contacts/known').length, 0);
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/known/tags').length, 2);
++});
++
+ test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+   const mock = mockGhl();
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+
+tokens used
+21,381
+Implemented the live GHL tag-race fix.
+
+- Existing contacts now use additive `POST /contacts/{contactId}/tags`.
+- Added GET readback verifying all requested tags case-insensitively.
+- Contact creation still includes initial tags.
+- Updated mock router for additive tags.
+- Added stale-search regression proving sequential feedback and wording events retain both tags.
+- Saved expected RED output to [ghl-tag-race-red.log](/root/ai-surfer-assets/projects/reason-to-reach-out-public/logs/ghl-tag-race-red.log).
+- Full test suite passes.
+- All backend, public, and test JavaScript passes `node --check`.
+- No live GHL calls or deployment performed.

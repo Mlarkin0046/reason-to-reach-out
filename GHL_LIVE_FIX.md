@@ -1,0 +1,7 @@
+Fix two live-GHL defects found in Stage 1 integration testing. TDD first; save RED output to logs/ghl-live-defects-red.log. Work only in this repo; do not call live GHL from tests.
+
+Defect 1: GHL normalizes anonymous contact names to lowercase and returns name:null, firstName:"rtro", lastName:"anonymous feedback". The current case-sensitive anonymous match created two contacts. Make the anonymous record deterministic by assigning a stable reserved email `rtro-anonymous-feedback@reasontoreachout.invalid` on creation, searching exact email first, and retaining a case-insensitive legacy-name fallback so existing records can be adopted. Never send email to it. Tests must simulate GHL lowercasing and prove repeated anonymous events reuse one contact.
+
+Defect 2: two back-to-back live known-contact writes transiently returned non-2xx, then succeeded on manual retry. Add bounded automatic retry in the private GHL request helper for 429 and 5xx only: at most 3 total attempts with short exponential waits, honoring Retry-After when present but cap the wait. Never retry validation/auth 4xx. Add mock tests proving a 500 then success is retried, while 400 is not.
+
+Preserve exact write/readback verification, tags, notes, event validation, public behavior, and all existing tests. Update README verification note. Run all tests and node --check.

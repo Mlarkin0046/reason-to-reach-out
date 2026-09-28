@@ -1,0 +1,4 @@
+b6ba042c2a6dddf091f6c55510a51ab04f6fa0ee2607e3721a3170d3d79789b2  /root/ai-surfer-assets/software/reason-to-reach-out-demo/index.html
+dfe286540a938ff6d48ae314708fe253c9308b7fb11185876789f06b77312ed1  /root/ai-surfer-assets/software/reason-to-reach-out-demo/app.js
+0f9a5cad07941f0826586c94e089d89b918c46e5c17cf2d5a3c6f666e3bc694f  /root/ai-surfer-assets/software/reason-to-reach-out-demo/pdf-lib.min.js
+da42135c76763367cd99e5e09491164c71abd4db84264b61a604bef88cfe0043  /root/ai-surfer-assets/software/reason-to-reach-out-demo/Airstrike_Marketing_logo_design_300_DPI.png

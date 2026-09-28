@@ -1,0 +1,4 @@
+import { requestVerification } from '../../lib/verification.js';
+import { json,preflight,guard,readJson,validationError,createRateLimiter,clientKey,allowRequest } from '../../lib/http.js';
+const limit=createRateLimiter(5);
+export async function onRequest({request,env}){const early=preflight(request)||guard(request);if(early)return early;const origin=request.headers.get('origin')||'';const ip=clientKey(request);if(!await allowRequest(env.VERIFICATION_REQUEST_RATE_LIMIT,limit,ip))return json(429,{error:'Too many verification requests. Please wait and try again.'},origin);try{const result=await requestVerification(await readJson(request),env,{fetchImpl:env.RTRO_FETCH||fetch,now:env.RTRO_NOW||Date.now,ip});return json(202,result,origin);}catch(error){const rate=/Too many/.test(error.message);return json(rate?429:validationError(error)?400:502,{error:rate||validationError(error)?error.message:'Verification email is temporarily unavailable.'},origin);}}

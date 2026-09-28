@@ -1,0 +1,96 @@
+TAP version 13
+# Subtest: anonymous and known events use exact contacts, notes, tags, and readbacks
+ok 1 - anonymous and known events use exact contacts, notes, tags, and readbacks
+  ---
+  duration_ms: 6.786593
+  type: 'test'
+  ...
+# Subtest: lead capture uses sanitized source and writes structured app-user-only note
+ok 2 - lead capture uses sanitized source and writes structured app-user-only note
+  ---
+  duration_ms: 1.987294
+  type: 'test'
+  ...
+# Subtest: write/readback failure rejects the relay operation
+ok 3 - write/readback failure rejects the relay operation
+  ---
+  duration_ms: 1.353864
+  type: 'test'
+  ...
+# Subtest: lowercased anonymous contacts are reused by their reserved email
+not ok 4 - lowercased anonymous contacts are reused by their reserved email
+  ---
+  duration_ms: 2.370134
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:82:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    2 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:101:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: case-insensitive legacy anonymous name fallback adopts an existing contact
+not ok 5 - case-insensitive legacy anonymous name fallback adopts an existing contact
+  ---
+  duration_ms: 0.895954
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:107:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:113:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: transient 500 is retried and then succeeds
+not ok 6 - transient 500 is retried and then succeeds
+  ---
+  duration_ms: 35.347777
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:120:1'
+  failureType: 'testCodeFailure'
+  error: 'LeadConnector 500'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    request (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js:14:29)
+    async findExact (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js:31:16)
+    async upsert (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js:41:17)
+    async Object.record (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js:76:19)
+    async TestContext.<anonymous> (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:129:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: validation 400 is not retried
+ok 7 - validation 400 is not retried
+  ---
+  duration_ms: 0.544343
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 4
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 68.053651

@@ -1,0 +1,61 @@
+Stage 2 focused RED run (before implementation)
+Command: node --test --test-concurrency=1 tests/worker.test.js tests/stage2-config.test.js tests/ghl.test.js tests/stage2-functions.test.js
+Exit code: 1
+
+Expected failing test files:
+- tests/worker.test.js: RTRO_TEST_MODE=1 bypass returned 400 instead of fail-closed 503.
+- tests/stage2-config.test.js: repository-root functions/ still existed and keep_vars = true was absent.
+- tests/ghl.test.js: backend GHL create readback accepted omitted expected fields.
+- tests/stage2-functions.test.js: Worker GHL create readback accepted omitted expected fields.
+
+TAP summary:
+1..4
+# tests 4
+# pass 0
+# fail 4
+# duration_ms 854.702807
+
+Live OpenRouter generation contract RED (before implementation)
+Command: node --test --test-concurrency=1 tests/stage2-ai.test.js
+TAP version 13
+# Subtest: tests/stage2-ai.test.js
+not ok 1 - tests/stage2-ai.test.js
+  ---
+  duration_ms: 137.058691
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/stage2-ai.test.js:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 151.172202
+Exit code: 1
+
+Independent review blocker RED: Workers AI prompt lacks the complete strict contract
+Command: node tests/stage2-ai.test.js
+Exit code: 1
+
+Relevant TAP output:
+# Subtest: OpenRouter corrective retry shares one deadline and receives only the remaining time
+ok 6 - OpenRouter corrective retry shares one deadline and receives only the remaining time
+# Subtest: Workers AI fallback receives the complete strict contract and normalizes a realistic four-play response
+not ok 8 - Workers AI fallback receives the complete strict contract and normalizes a realistic four-play response
+  ---
+  error: |-
+    The input did not match the regular expression /strict JSON/i. Input:
+    'Create a practical outreach plan from this fictional input. The app user is the sender and the prospect is the recipient; every script must speak from sender to recipient. Address the sender as "you" in analysis. Use only supplied facts and put any clearly labeled assumptions in assumptions. Input: {"firstName":"Avery","relationship":"Stalled deal","stage":"Proposal or quote","company":"Prairie Air","situation":"A verified situation."}'
+  ...
+1..8
+# tests 8
+# pass 7
+# fail 1

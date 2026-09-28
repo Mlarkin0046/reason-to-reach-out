@@ -1,0 +1,56 @@
+
+> reason-to-reach-out-stage1@1.0.0 test
+> node --test --test-concurrency=1
+
+TAP version 13
+# Subtest: tests/backend.test.js
+not ok 1 - tests/backend.test.js
+  ---
+  duration_ms: 118.463336
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/backend.test.js:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: tests/core.test.js
+ok 2 - tests/core.test.js
+  ---
+  duration_ms: 78.364315
+  type: 'test'
+  ...
+# Subtest: tests/ghl.test.js
+not ok 3 - tests/ghl.test.js
+  ---
+  duration_ms: 96.667068
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: tests/public.test.js
+not ok 4 - tests/public.test.js
+  ---
+  duration_ms: 97.697474
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/public.test.js:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 1
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 420.209281

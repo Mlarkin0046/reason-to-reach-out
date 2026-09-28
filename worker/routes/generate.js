@@ -1,0 +1,5 @@
+import { validateGenerate,normalizePlan } from '../lib/core.js';
+import { createGenerator } from '../lib/ai.js';
+import { json,preflight,guard,readJson,validationError,createRateLimiter,clientKey,allowRequest } from '../lib/http.js';
+const limit=createRateLimiter(10);
+export async function onRequest({request,env}){const early=preflight(request)||guard(request);if(early)return early;const origin=request.headers.get('origin')||'';if(!await allowRequest(env.GENERATION_RATE_LIMIT,limit,clientKey(request)))return json(429,{error:'Too many requests. Please try again later.'},origin);try{const input=validateGenerate(await readJson(request));const raw=await createGenerator({env,fetchImpl:env.RTRO_FETCH||fetch})(input);return json(200,normalizePlan(raw,input.firstName),origin);}catch(error){if(error.code==='RTRO_TIMEOUT')return json(504,{error:'Generation timed out. Please try again in a minute.'},origin);return json(validationError(error)?400:502,{error:validationError(error)?error.message:'Generation is temporarily unavailable. Please try again.'},origin);}}

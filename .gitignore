@@ -1,0 +1,7 @@
+logs/codex-stage2.log
+logs/codex-fix-stage2.log
+logs/codex-worker-stage2.log
+logs/codex-final-stage2.log
+logs/codex-generation-contract.log
+logs/codex-ai-fallback-fix.log
+.wrangler/

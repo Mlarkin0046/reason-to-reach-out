@@ -1,0 +1,2934 @@
+warning: `--full-auto` is deprecated; use `--sandbox workspace-write` instead.
+Reading additional input from stdin...
+OpenAI Codex v0.144.4
+--------
+workdir: /root/ai-surfer-assets/projects/reason-to-reach-out-public
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: none
+reasoning summaries: none
+session id: 01a0e4fd-21cb-7e00-9ce4-08e66f75dc4e
+--------
+user
+Fix two live-GHL defects found in Stage 1 integration testing. TDD first; save RED output to logs/ghl-live-defects-red.log. Work only in this repo; do not call live GHL from tests.
+
+Defect 1: GHL normalizes anonymous contact names to lowercase and returns name:null, firstName:"rtro", lastName:"anonymous feedback". The current case-sensitive anonymous match created two contacts. Make the anonymous record deterministic by assigning a stable reserved email `rtro-anonymous-feedback@reasontoreachout.invalid` on creation, searching exact email first, and retaining a case-insensitive legacy-name fallback so existing records can be adopted. Never send email to it. Tests must simulate GHL lowercasing and prove repeated anonymous events reuse one contact.
+
+Defect 2: two back-to-back live known-contact writes transiently returned non-2xx, then succeeded on manual retry. Add bounded automatic retry in the private GHL request helper for 429 and 5xx only: at most 3 total attempts with short exponential waits, honoring Retry-After when present but cap the wait. Never retry validation/auth 4xx. Add mock tests proving a 500 then success is retried, while 400 is not.
+
+Preserve exact write/readback verification, tags, notes, event validation, public behavior, and all existing tests. Update README verification note. Run all tests and node --check.
+warning: Codex could not find bubblewrap on PATH. Install bubblewrap with your OS package manager. See the sandbox prerequisites: https://developers.openai.com/codex/concepts/sandboxing#prerequisites. Codex will use the bundled bubblewrap in the meantime.
+codex
+I’ll inspect the repository guidance and current GHL implementation/tests, then add failing tests first and capture that RED run exactly as requested.
+exec
+/bin/bash -lc "ls -la && find .. -name AGENTS.md -print && rg -n \"GHL|anonymous|Retry-After|request\" . --glob '"'!node_modules'"' --glob '"'!logs/*'"'" in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+ succeeded in 1244ms:
+../astra-routing/node_modules/next/AGENTS.md
+../astra-routing/AGENTS.md
+./HARDENING.md:26:4. GHL relay correctness and verification:
+./HARDENING.md:29:- all anonymous events must be logged as notes on the single exact RTRO Anonymous Feedback contact; known-contact events must be notes on that contact. Keep tags for wording/contact actions.
+./HARDENING.md:30:- when an email appears later, add one note attaching that session's earlier anonymous event summary and clear the in-memory summary.
+./HARDENING.md:31:- exact-match found contact by email; exact-match anonymous record by full/name fields, not blindly first search result.
+./HARDENING.md:34:- Add mock-fetch adapter tests proving request bodies/tags/notes contain app-user fields and no prospect fields, known and anonymous routes, and readbacks. Never hit live GHL from automated tests.
+./HARDENING.md:36:5. Generation request client timeout: AbortController at about 30 seconds and exact friendly error. Controls re-enable in finally. See-example remains usable.
+./README_STAGE1.md:15:`RTRO_TEST_MODE=1` is the explicit safe local mode: events are accepted without contacting LeadConnector. Live event relay requires `GHL_API_KEY` and `GHL_LOCATION_ID` in the backend process environment. Tests always inject mocks and never write to GHL. Generation uses the installed `hermes` CLI with provider `openrouter` and model `openai/gpt-4.1-mini` by default. `HERMES_CLI` may select another executable path; `RTRO_HERMES_PROVIDER` and `RTRO_HERMES_MODEL` override the generation provider and model.
+./README_STAGE1.md:33:- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+./WORK_ORDER.md:19:- POST /api/rtro/event: strict event allowlist and per-type schemas; 60/IP/hour; same CORS. Use GHL_API_KEY and GHL_LOCATION_ID only from process env. Public code must contain no GHL credentials. Use LeadConnector API, Version 2021-07-28 or v3 where appropriate, browser-like UA, and verify writes by readback where practical. Prefix every tag with RTRO.
+./WORK_ORDER.md:23:- Feedback: known email attaches note and RTRO - Feedback: Yes/With Edits/No. Anonymous feedback/events go to one reusable GHL contact named RTRO Anonymous Feedback or simplest equivalent. If email appears later, attach earlier session event summary to that contact. Wording copied tags known contact RTRO - Copied Wording. Contact clicks tag RTRO - Clicked Contact or RTRO - Clicked Mailbox Power.
+./WORK_ORDER.md:24:- Use dependency injection/mocks so tests never write to live GHL. Provide a documented explicit local test mode. The final live integration will be tested separately by the parent agent.
+./WORK_ORDER.md:31:- Privacy copy says situation text is sent to an AI service for generation; prospect details are never sent to GHL.
+./WORK_ORDER.md:33:- Add dynamic end contact block. For selected play primary channel Mailed card/Gift leave-behind show full requested copy, phone/email/book button, Vimeo and Mailbox Power links and note. Other channels show light copy. The block is based on selected play, not currently viewed tab, and updates on play switch. target=_blank rel=noopener on external web links. Phone/email need not new-tab.
+./WORK_ORDER.md:36:- Track all specified behaviors, using anonymous sessionId until email known, then include email and lead capture reconciles earlier events. Plan generated relationship/stage/source; play selection rank; channel tab; copy wording; PDF; contact clicks phone/email/booking/video/Mailbox Power. Source from ?src= persisted for session, sanitized, all events, GHL source tag.
+./WORK_ORDER.md:37:- See an example first above form. It fills fictional form and shows example.json instantly with zero API. Friendly generation error exact text: “We're getting a lot of requests right now. Try again in a minute, or view the example below.” and reveal/focus See an example.
+./GHL_LIVE_FIX.md:1:Fix two live-GHL defects found in Stage 1 integration testing. TDD first; save RED output to logs/ghl-live-defects-red.log. Work only in this repo; do not call live GHL from tests.
+./GHL_LIVE_FIX.md:3:Defect 1: GHL normalizes anonymous contact names to lowercase and returns name:null, firstName:"rtro", lastName:"anonymous feedback". The current case-sensitive anonymous match created two contacts. Make the anonymous record deterministic by assigning a stable reserved email `rtro-anonymous-feedback@reasontoreachout.invalid` on creation, searching exact email first, and retaining a case-insensitive legacy-name fallback so existing records can be adopted. Never send email to it. Tests must simulate GHL lowercasing and prove repeated anonymous events reuse one contact.
+./GHL_LIVE_FIX.md:5:Defect 2: two back-to-back live known-contact writes transiently returned non-2xx, then succeeded on manual retry. Add bounded automatic retry in the private GHL request helper for 429 and 5xx only: at most 3 total attempts with short exponential waits, honoring Retry-After when present but cap the wait. Never retry validation/auth 4xx. Add mock tests proving a 500 then success is retried, while 400 is not.
+./RECOVERY.md:1:Last checkpoint: 24 tests pass; exact contact/feedback copy and verified GHL adapter hardening complete
+./RECOVERY.md:2:Next: local browser QA, live GHL test, rate/timeout/load checks, then publish static build folder only
+./backend/ghl.js:5:const anonymousName = 'RTRO Anonymous Feedback';
+./backend/ghl.js:7:export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+./backend/ghl.js:10:  if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+./backend/ghl.js:12:  async function request(path, options={}) {
+./backend/ghl.js:29:    const queryValue=event.email || anonymousName;
+./backend/ghl.js:31:    const data=await request(`/contacts/?${query}`);
+./backend/ghl.js:33:    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
+./backend/ghl.js:36:    const result=await request(`/contacts/${id}`);
+./backend/ghl.js:46:        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
+./backend/ghl.js:47:      contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+./backend/ghl.js:52:      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+./backend/ghl.js:59:    const created=(await request(`/contacts/${contactId}/notes`, { method:'POST', body:JSON.stringify({ body }) })).note;
+./backend/ghl.js:61:    const readback=(await request(`/contacts/${contactId}/notes/${created.id}`)).note;
+./backend/ghl.js:78:      await addNote(contact.id,`Earlier anonymous RTRO session activity:\n${prior.join('\n\n')}`);
+./backend/app.js:59:const requestIp = (req) => String(req.headers['cf-connecting-ip'] || req.socket.remoteAddress || '').split(',')[0].trim();
+./backend/app.js:69:    if (!(isGenerate ? generateLimit : eventLimit)(requestIp(req))) return json(res,429,{ error:'Too many requests. Please try again later.' },origin);
+./public/index.html:20:  <div class="two"><div class="field"><label for="priority">What matters to them?</label><input id="priority"></div><div class="field"><label for="lastContact">Time since contact</label><input id="lastContact"></div></div><div class="field"><label for="trigger">Verified trigger (optional)</label><textarea id="trigger"></textarea></div><div class="field"><label for="nextStep">Desired next step</label><input id="nextStep"></div><button class="primary" id="submitButton">Build four outreach plays</button><p class="privacy">Prospect details are never sent to GHL. Only your contact details entered for PDF download and anonymous interaction metadata are relayed.</p>
+./tests/ghl.test.js:37:test('anonymous and known events use exact contacts, notes, tags, and readbacks', async () => {
+./tests/ghl.test.js:51:  assert.ok(posts.some((call) => /Earlier anonymous RTRO session activity/.test(call.body.body)));
+./public/app.js:55:  $('#reasonForm').addEventListener('submit',async(e)=>{e.preventDefault();if(!e.currentTarget.reportValidity())return;const button=$('#submitButton');const controller=typeof AbortController !== 'undefined' ? new AbortController() : null;const timeout=setTimeout(()=>controller?.abort(),30_000);state.input=collect();button.disabled=true;$('#status').className='status loading show';$('#status').textContent='Building four prospect-centered plays…';try{const response=await fetch(`${apiBase()}/api/rtro/generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(state.input),...(controller?{signal:controller.signal}:{})});if(!response.ok)throw new Error(`generate ${response.status}`);showPlan(await response.json(),state.input);if(typeof window.ASOS_COMPLETE==='function')window.ASOS_COMPLETE({input:state.input,...state.data},'json');}catch(error){console.warn('RTRO generation unavailable:',error);$('#status').className='status error show';$('#status').textContent="We're getting a lot of requests right now. Try again in a minute, or view the example below.";$('#exampleButton').focus();if(window.ASOS_RUN&&typeof window.ASOS_FAIL==='function')window.ASOS_FAIL(String(error.message||error));}finally{clearTimeout(timeout);button.disabled=false;}});
+./public/app.js:63:  function applyRun(run){try{const data=typeof run==='string'?JSON.parse(run):run;if(!data)return;const map={firstName:'firstName',relationship:'relationship',stage:'stage',company:'company',prospectName:'prospectName',prospectRole:'prospectRole',situation:'situation',priority:'priority',lastContact:'lastContact',trigger:'trigger',desiredNextStep:'nextStep',nextStep:'nextStep'};Object.entries(map).forEach(([k,id])=>{if(data[k]!=null)$(`#${id}`).value=data[k]});if($('#firstName').value&&$('#company').value&&$('#situation').value)$('#reasonForm').requestSubmit();}catch(error){if(typeof window.ASOS_FAIL==='function')window.ASOS_FAIL(String(error.message||error));}}
+./tests/public.test.js:16:  assert.doesNotMatch(combined, /sslip\.io|\/api\/micro-ai|GHL_API_KEY|GHL_LOCATION_ID|Bearer\s+[A-Za-z0-9]/i);
+./tests/public.test.js:22:  assert.doesNotMatch(combined, /Email this plan|setup required|Owner tools|Export GHL|CSV/i);
+./tests/public.test.js:29:  assert.match(html, /prospect details are never sent to GHL/i);
+./tests/public.test.js:43:  assert.match(js, /We're getting a lot of requests right now\. Try again in a minute, or view the example below\./);
+./public/example.json:32:      "scripts": {"Email":"Subject: A clean checkpoint\n\nHi Jordan,\n\nI know your team is still comparing options. I summarized the maintenance windows you shared and the one sequencing question that remains open. I’m happy to send it, then leave timing with you.\n\nAvery","Call opener":"Hi Jordan, this is Avery. I don’t want to add noise while your team compares options. I prepared a concise recap of the verified windows and one open sequencing question. Would that be useful before I step back?\n\nAvery","Voicemail":"Hi Jordan, this is Avery. I prepared a concise recap of the maintenance windows and one open sequencing question. I’ll send a short note, then leave the timing with you.\n\nAvery","Text":"Hi Jordan—Avery here. I summarized the verified windows and one open sequencing question. Would the short recap help while your team compares options?\n\nAvery","LinkedIn":"Hi Jordan, I prepared a concise recap of the verified maintenance windows and one remaining sequencing question. Happy to share it, then leave timing with you.\n\nAvery","Mailed card":"Hi Jordan,\n\nI know your team is comparing options, so I wanted to leave a clean recap rather than another follow-up request. I noted the maintenance windows you shared and the one sequencing question still open. I’m happy to help when the timing is useful.\n\nAvery","Gift/leave-behind":"Hi Jordan,\n\nThis concise checkpoint captures the verified maintenance windows and the one sequencing question still open. I hope it is useful while your team compares options; there is no expectation attached.\n\nAvery"}
+
+exec
+/bin/bash -lc "sed -n '1,240p' backend/ghl.js && sed -n '1,260p' tests/ghl.test.js && cat package.json && cat README_STAGE1.md && cat .agents/* 2>/dev/null" in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+ exited 1 in 0ms:
+import { sanitizeSource } from './core.js';
+
+const API = 'https://services.leadconnectorhq.com';
+const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+const anonymousName = 'RTRO Anonymous Feedback';
+
+export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+  const sessionSummaries = new Map();
+  if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+  if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+  const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
+  async function request(path, options={}) {
+    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+    return response.status === 204 ? {} : response.json();
+  }
+  const tagsFor = (event) => {
+    const tags=[];
+    if (event.type === 'lead_capture') tags.push('RTRO - PDF Download');
+    if (event.source) tags.push(`RTRO - Source: ${sanitizeSource(event.source)}`);
+    if (event.consent === true) tags.push('RTRO - Consent Yes');
+    if (['Mailed card','Gift/leave-behind'].includes(event.channel)) tags.push('RTRO - Physical Mail Interest');
+    if (event.type === 'feedback') tags.push(`RTRO - Feedback: ${event.answer}`);
+    if (event.type === 'wording_copied') tags.push('RTRO - Copied Wording');
+    if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+    return [...new Set(tags)];
+  };
+  async function findExact(event) {
+    const queryValue=event.email || anonymousName;
+    const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+    const data=await request(`/contacts/?${query}`);
+    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
+  }
+  async function readContact(id) {
+    const result=await request(`/contacts/${id}`);
+    if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+    return result.contact;
+  }
+  async function upsert(event) {
+    let contact=await findExact(event);
+    const tags=tagsFor(event);
+    if (!contact) {
+      const body=event.email
+        ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
+      contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+      if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+      return readContact(contact.id);
+    }
+    if (tags.length) {
+      const updated=(await request(`/contacts/${contact.id}`, { method:'PUT', body:JSON.stringify({ tags:[...new Set([...(contact.tags || []),...tags])] }) })).contact;
+      if (updated?.id !== contact.id) throw new Error('LeadConnector contact update mismatch.');
+      contact=await readContact(contact.id);
+    }
+    return contact;
+  }
+  async function addNote(contactId, body) {
+    const created=(await request(`/contacts/${contactId}/notes`, { method:'POST', body:JSON.stringify({ body }) })).note;
+    if (!created?.id) throw new Error('LeadConnector note create returned no target.');
+    const readback=(await request(`/contacts/${contactId}/notes/${created.id}`)).note;
+    if (readback?.id !== created.id || readback.contactId && readback.contactId !== contactId) throw new Error('LeadConnector note readback mismatch.');
+  }
+  const eventNote = (event) => [
+    `RTRO event: ${event.type}`,
+    `Timestamp: ${event.timestamp}`,
+    `Source: ${sanitizeSource(event.source)}`,
+    ...(event.selectedPlay ? [`Selected play: ${event.selectedPlay}`] : []),
+    ...(event.channel ? [`Recommended channel: ${event.channel}`] : []),
+    ...(event.type === 'lead_capture' ? [`Consent: ${event.consent ? 'Yes' : 'No'}`,`App user: ${event.firstName}`,`App user email: ${event.email}`,...(event.company ? [`App user company: ${event.company}`] : [])] : []),
+    ...(event.type === 'feedback' ? [`Answer: ${event.answer}`,...(event.missing ? [`What's missing: ${event.missing}`] : [])] : []),
+    ...(event.type === 'contact_click' ? [`Target: ${event.target}`] : [])
+  ].join('\n');
+  return { record:async(event)=>{
+    const prior=sessionSummaries.get(event.sessionId) || [];
+    const contact=await upsert(event);
+    if (event.email && prior.length) {
+      await addNote(contact.id,`Earlier anonymous RTRO session activity:\n${prior.join('\n\n')}`);
+      sessionSummaries.delete(event.sessionId);
+    }
+    const note=eventNote(event);
+    await addNote(contact.id,note);
+    if (!event.email) sessionSummaries.set(event.sessionId,[...prior,note].slice(-30));
+    return { ok:true };
+  } };
+}
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createGhlAdapter } from '../backend/ghl.js';
+
+function mockGhl(seed = []) {
+  const contacts = new Map(seed.map((contact) => [contact.id, structuredClone(contact)]));
+  const calls = [];
+  let contactNumber = seed.length;
+  let noteNumber = 0;
+  const notes = new Map();
+  const fetchImpl = async (url, options = {}) => {
+    const parsed = new URL(url); const method = options.method || 'GET';
+    const body = options.body ? JSON.parse(options.body) : undefined;
+    calls.push({ method, path:`${parsed.pathname}${parsed.search}`, body });
+    const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+    if (method === 'GET' && parsed.pathname === '/contacts/') {
+      const query = (parsed.searchParams.get('query') || '').toLowerCase();
+      return response(200, { contacts:[...contacts.values()].filter((c) => JSON.stringify(c).toLowerCase().includes(query)) });
+    }
+    if (method === 'POST' && parsed.pathname === '/contacts/') {
+      const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+    }
+    const contactMatch = parsed.pathname.match(/^\/contacts\/([^/]+)$/);
+    if (contactMatch && method === 'GET') return contacts.has(contactMatch[1]) ? response(200, { contact:contacts.get(contactMatch[1]) }) : response(404, {});
+    if (contactMatch && method === 'PUT') { const updated={ ...contacts.get(contactMatch[1]), ...body }; contacts.set(contactMatch[1],updated); return response(200,{ contact:updated }); }
+    const notesMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes$/);
+    if (notesMatch && method === 'POST') { const note={ id:`n${++noteNumber}`, contactId:notesMatch[1], ...body }; notes.set(note.id,note); return response(201,{ note }); }
+    const noteMatch = parsed.pathname.match(/^\/contacts\/([^/]+)\/notes\/([^/]+)$/);
+    if (noteMatch && method === 'GET') return notes.has(noteMatch[2]) ? response(200,{ note:notes.get(noteMatch[2]) }) : response(404,{});
+    return response(404, {});
+  };
+  return { fetchImpl, calls, contacts, notes };
+}
+
+const event = (overrides={}) => ({ type:'channel_viewed', sessionId:'session-12345678', timestamp:'2026-09-27T12:00:00.000Z', source:'Spring Campaign', selectedPlay:'Decision guide', channel:'Email', ...overrides });
+
+test('anonymous and known events use exact contacts, notes, tags, and readbacks', async () => {
+  const mock = mockGhl([
+    { id:'wrong', name:'RTRO Anonymous Feedback Copy', firstName:'RTRO', lastName:'Anonymous' },
+    { id:'anon', name:'RTRO Anonymous Feedback', firstName:'RTRO Anonymous', lastName:'Feedback', tags:[] },
+    { id:'near', email:'person+old@example.com', tags:[] },
+    { id:'known', email:'person@example.com', tags:['Existing'] }
+  ]);
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+  await adapter.record(event({ type:'feedback', answer:'With Edits', missing:'Shorter wording' }));
+  await adapter.record(event({ type:'wording_copied', email:'PERSON@example.com' }));
+  const posts = mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path));
+  assert.equal(posts[0].path, '/contacts/anon/notes');
+  assert.ok(posts.slice(1).every((call) => call.path === '/contacts/known/notes'));
+  assert.match(posts[0].body.body, /With Edits|Shorter wording|Decision guide|Email|Spring Campaign/);
+  assert.ok(posts.some((call) => /Earlier anonymous RTRO session activity/.test(call.body.body)));
+  assert.ok(mock.calls.some((call) => call.method === 'GET' && call.path === '/contacts/anon'));
+  assert.ok(mock.calls.some((call) => call.method === 'GET' && call.path === '/contacts/known'));
+  assert.equal(mock.calls.filter((call) => call.method === 'GET' && /\/notes\/n\d+$/.test(call.path)).length, posts.length);
+  assert.ok(mock.contacts.get('anon').tags.includes('RTRO - Feedback: With Edits'));
+  assert.ok(mock.contacts.get('known').tags.includes('RTRO - Copied Wording'));
+});
+
+test('lead capture uses sanitized source and writes structured app-user-only note', async () => {
+  const mock = mockGhl();
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
+  await adapter.record(event({ type:'lead_capture', email:'owner@example.com', firstName:'Avery', company:'Sender Co', consent:true, source:'Spring Campaign', selectedPlay:'Capacity planning', channel:'Mailed card' }));
+  const create = mock.calls.find((call) => call.method === 'POST' && call.path === '/contacts/');
+  assert.equal(create.body.source, 'Spring Campaign');
+  assert.deepEqual(create.body.tags.sort(), ['RTRO - Consent Yes','RTRO - PDF Download','RTRO - Physical Mail Interest','RTRO - Source: Spring Campaign'].sort());
+  const note = mock.calls.find((call) => call.method === 'POST' && /\/notes$/.test(call.path)).body.body;
+  for (const value of ['Consent: Yes','Source: Spring Campaign','Selected play: Capacity planning','Recommended channel: Mailed card','Timestamp: 2026-09-27T12:00:00.000Z']) assert.match(note, new RegExp(value));
+  assert.doesNotMatch(JSON.stringify(mock.calls), /prospectName|prospectRole|situation|priority|trigger|desiredNextStep/);
+});
+
+test('write/readback failure rejects the relay operation', async () => {
+  const mock = mockGhl();
+  const fetchImpl = async (url, options) => {
+    const result = await mock.fetchImpl(url, options);
+    if ((options?.method || 'GET') === 'GET' && /\/contacts\/c1$/.test(new URL(url).pathname)) return { ok:false, status:500, json:async()=>({}) };
+    return result;
+  };
+  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+  await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+});
+{
+  "name": "reason-to-reach-out-stage1",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test --test-concurrency=1",
+    "start": "node backend/server.js"
+  }
+}
+# Reason to Reach Out — Stage 1 public MVP
+
+This repository contains the static public app in `public/`, the isolated Node 22 relay in `backend/`, and dependency-free `node:test` coverage in `tests/`. It does not include deployment or host-service configuration.
+
+## Run locally
+
+```bash
+npm test
+RTRO_TEST_MODE=1 npm start
+python3 -m http.server 8080 --directory public --bind 127.0.0.1
+```
+
+Before loading the static app, set the explicit browser override from the same page origin (for example in a local development wrapper) to `window.__RTRO_API_BASE = 'http://127.0.0.1:8787'`. The production constant remains `https://api.reasontoreachout.com`.
+
+`RTRO_TEST_MODE=1` is the explicit safe local mode: events are accepted without contacting LeadConnector. Live event relay requires `GHL_API_KEY` and `GHL_LOCATION_ID` in the backend process environment. Tests always inject mocks and never write to GHL. Generation uses the installed `hermes` CLI with provider `openrouter` and model `openai/gpt-4.1-mini` by default. `HERMES_CLI` may select another executable path; `RTRO_HERMES_PROVIDER` and `RTRO_HERMES_MODEL` override the generation provider and model.
+
+The service binds only to `127.0.0.1` and defaults to port `8787` (`PORT` may override it). Allowed browser origins are the apex and `www` production sites plus loopback HTTP origins with explicit ports.
+
+## Temporary launch blockers
+
+- Contact email is unresolved: replace the one-line `CONTACT_EMAIL` value `contact@reasontoreachout.invalid` in `public/app.js` when approved.
+- Booking URL is unresolved: replace the one-line `BOOKING_URL` value `https://booking.reasontoreachout.invalid` in `public/app.js` when approved.
+
+Do not substitute an `airstrikemarketing.us` address.
+
+## Verification notes
+
+- The fictional Prairie Air Systems sample is loaded from `public/example.json` and works with the backend stopped.
+- Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+- PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+- `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
+- Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+- No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+
+codex
+I found the failure points: anonymous lookup currently makes one name query with case-sensitive matching, and the request helper performs a single attempt for every status. I’m adding focused regression tests now, including a mock that reproduces GHL’s lowercase/name-null normalization; the first run will intentionally fail and be saved to the requested log.
+apply patch
+patch: completed
+/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..ee4c412c28652c27acea9bd250fc5f1451902617
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -78,3 +78,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.match(searches[0].path, /query=rtro-anonymous-feedback%40reasontoreachout\.invalid/);
++  assert.match(searches[1].path, /query=RTRO%20Anonymous%20Feedback/);
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 7);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..ee4c412c28652c27acea9bd250fc5f1451902617
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -78,3 +78,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.match(searches[0].path, /query=rtro-anonymous-feedback%40reasontoreachout\.invalid/);
++  assert.match(searches[1].path, /query=RTRO%20Anonymous%20Feedback/);
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 7);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+exec
+/bin/bash -lc 'npm test 2>&1 | tee logs/ghl-live-defects-red.log; test ${PIPESTATUS[0]} -ne 0' in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..ee4c412c28652c27acea9bd250fc5f1451902617
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -78,3 +78,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.match(searches[0].path, /query=rtro-anonymous-feedback%40reasontoreachout\.invalid/);
++  assert.match(searches[1].path, /query=RTRO%20Anonymous%20Feedback/);
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 7);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+ succeeded in 796ms:
+
+> reason-to-reach-out-stage1@1.0.0 test
+> node --test --test-concurrency=1
+
+TAP version 13
+# Subtest: tests/backend.test.js
+ok 1 - tests/backend.test.js
+  ---
+  duration_ms: 125.368279
+  type: 'test'
+  ...
+# Subtest: tests/core.test.js
+ok 2 - tests/core.test.js
+  ---
+  duration_ms: 82.050714
+  type: 'test'
+  ...
+# Subtest: tests/ghl.test.js
+not ok 3 - tests/ghl.test.js
+  ---
+  duration_ms: 131.459888
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: tests/hermes.test.js
+ok 4 - tests/hermes.test.js
+  ---
+  duration_ms: 100.244054
+  type: 'test'
+  ...
+# Subtest: tests/public.test.js
+ok 5 - tests/public.test.js
+  ---
+  duration_ms: 99.377185
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 4
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 568.104557
+
+exec
+/bin/bash -lc 'node --test tests/ghl.test.js 2>&1 | tee logs/ghl-live-defects-red.log; test ${PIPESTATUS[0]} -ne 0' in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..ee4c412c28652c27acea9bd250fc5f1451902617
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -78,3 +78,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.match(searches[0].path, /query=rtro-anonymous-feedback%40reasontoreachout\.invalid/);
++  assert.match(searches[1].path, /query=RTRO%20Anonymous%20Feedback/);
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 7);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+ succeeded in 218ms:
+# Subtest: tests/ghl.test.js
+not ok 1 - tests/ghl.test.js
+  ---
+  duration_ms: 135.113824
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 149.39983
+
+exec
+/bin/bash -lc 'node tests/ghl.test.js 2>&1 | tee logs/ghl-live-defects-red.log; test ${PIPESTATUS[0]} -ne 0' in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..ee4c412c28652c27acea9bd250fc5f1451902617
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -78,3 +78,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.match(searches[0].path, /query=rtro-anonymous-feedback%40reasontoreachout\.invalid/);
++  assert.match(searches[1].path, /query=RTRO%20Anonymous%20Feedback/);
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 7);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+ succeeded in 155ms:
+TAP version 13
+# Subtest: anonymous and known events use exact contacts, notes, tags, and readbacks
+ok 1 - anonymous and known events use exact contacts, notes, tags, and readbacks
+  ---
+  duration_ms: 6.786593
+  type: 'test'
+  ...
+# Subtest: lead capture uses sanitized source and writes structured app-user-only note
+ok 2 - lead capture uses sanitized source and writes structured app-user-only note
+  ---
+  duration_ms: 1.987294
+  type: 'test'
+  ...
+# Subtest: write/readback failure rejects the relay operation
+ok 3 - write/readback failure rejects the relay operation
+  ---
+  duration_ms: 1.353864
+  type: 'test'
+  ...
+# Subtest: lowercased anonymous contacts are reused by their reserved email
+not ok 4 - lowercased anonymous contacts are reused by their reserved email
+  ---
+  duration_ms: 2.370134
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:82:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    2 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:101:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: case-insensitive legacy anonymous name fallback adopts an existing contact
+not ok 5 - case-insensitive legacy anonymous name fallback adopts an existing contact
+  ---
+  duration_ms: 0.895954
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:107:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:113:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: transient 500 is retried and then succeeds
+not ok 6 - transient 500 is retried and then succeeds
+  ---
+  duration_ms: 35.347777
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:120:1'
+  failureType: 'testCodeFailure'
+  error: 'LeadConnector 500'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    request (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js:14:29)
+    async findExact (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js:31:16)
+    async upsert (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js:41:17)
+    async Object.record (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js:76:19)
+    async TestContext.<anonymous> (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:129:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: validation 400 is not retried
+ok 7 - validation 400 is not retried
+  ---
+  duration_ms: 0.544343
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 4
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 68.053651
+
+codex
+The RED log now clearly records all three intended failures: duplicate normalized anonymous contacts, failure to adopt a lowercase legacy contact, and no retry after a 500. I’m implementing the smallest adapter changes next; retries will remain limited to response statuses 429/5xx, with three attempts maximum and capped delays.
+apply patch
+patch: completed
+/root/ai-surfer-assets/projects/reason-to-reach-out-public/README_STAGE1.md
+/root/ai-surfer-assets/projects/reason-to-reach-out-public/backend/ghl.js
+/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..c5fa39a551fc4c25db13553e173b21ccdea9dd89
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -78,3 +78,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.match(searches[0].path, /query=rtro-anonymous-feedback%40reasontoreachout\.invalid/);
++  assert.match(searches[1].path, /query=RTRO%20Anonymous%20Feedback/);
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..c5fa39a551fc4c25db13553e173b21ccdea9dd89
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -78,3 +78,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.match(searches[0].path, /query=rtro-anonymous-feedback%40reasontoreachout\.invalid/);
++  assert.match(searches[1].path, /query=RTRO%20Anonymous%20Feedback/);
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+exec
+/bin/bash -lc "node tests/ghl.test.js && npm test && find backend public tests -type f -name '*.js' -print0 | xargs -0 -n1 node --check" in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..c5fa39a551fc4c25db13553e173b21ccdea9dd89
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -78,3 +78,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.match(searches[0].path, /query=rtro-anonymous-feedback%40reasontoreachout\.invalid/);
++  assert.match(searches[1].path, /query=RTRO%20Anonymous%20Feedback/);
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+ exited 1 in 364ms:
+# Subtest: write/readback failure rejects the relay operation
+ok 3 - write/readback failure rejects the relay operation
+  ---
+  duration_ms: 152.102501
+  type: 'test'
+  ...
+# Subtest: lowercased anonymous contacts are reused by their reserved email
+ok 4 - lowercased anonymous contacts are reused by their reserved email
+  ---
+  duration_ms: 1.868271
+  type: 'test'
+  ...
+# Subtest: case-insensitive legacy anonymous name fallback adopts an existing contact
+not ok 5 - case-insensitive legacy anonymous name fallback adopts an existing contact
+  ---
+  duration_ms: 2.172012
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:107:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:113:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: transient 500 is retried and then succeeds
+ok 6 - transient 500 is retried and then succeeds
+  ---
+  duration_ms: 91.97215
+  type: 'test'
+  ...
+# Subtest: validation 400 is not retried
+ok 7 - validation 400 is not retried
+  ---
+  duration_ms: 1.683643
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 6
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 269.197523
+
+codex
+One new test exposed a mock fidelity issue rather than an adapter issue: the mock’s search only scanned serialized JSON, so it could not match a full name split across `firstName` and `lastName` as GHL does. I’m correcting that test double and making the search-order assertion inspect decoded query parameters.
+apply patch
+patch: completed
+/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..2ccc2591065926c03be9d6598fd06ae3c7cd7022
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -15,7 +15,10 @@
+     const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+     if (method === 'GET' && parsed.pathname === '/contacts/') {
+       const query = (parsed.searchParams.get('query') || '').toLowerCase();
+-      return response(200, { contacts:[...contacts.values()].filter((c) => JSON.stringify(c).toLowerCase().includes(query)) });
++      return response(200, { contacts:[...contacts.values()].filter((c) => {
++        const splitName=`${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
++        return JSON.stringify(c).toLowerCase().includes(query) || splitName.includes(query);
++      }) });
+     }
+     if (method === 'POST' && parsed.pathname === '/contacts/') {
+       const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+@@ -78,3 +81,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.equal(new URL(`https://example.test${searches[0].path}`).searchParams.get('query'), 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..2ccc2591065926c03be9d6598fd06ae3c7cd7022
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -15,7 +15,10 @@
+     const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+     if (method === 'GET' && parsed.pathname === '/contacts/') {
+       const query = (parsed.searchParams.get('query') || '').toLowerCase();
+-      return response(200, { contacts:[...contacts.values()].filter((c) => JSON.stringify(c).toLowerCase().includes(query)) });
++      return response(200, { contacts:[...contacts.values()].filter((c) => {
++        const splitName=`${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
++        return JSON.stringify(c).toLowerCase().includes(query) || splitName.includes(query);
++      }) });
+     }
+     if (method === 'POST' && parsed.pathname === '/contacts/') {
+       const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+@@ -78,3 +81,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.equal(new URL(`https://example.test${searches[0].path}`).searchParams.get('query'), 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+exec
+/bin/bash -lc "npm test && find backend public tests -type f -name '*.js' -print0 | xargs -0 -n1 node --check && git diff --check && git status --short && git diff -- backend/ghl.js tests/ghl.test.js README_STAGE1.md" in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..2ccc2591065926c03be9d6598fd06ae3c7cd7022
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -15,7 +15,10 @@
+     const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+     if (method === 'GET' && parsed.pathname === '/contacts/') {
+       const query = (parsed.searchParams.get('query') || '').toLowerCase();
+-      return response(200, { contacts:[...contacts.values()].filter((c) => JSON.stringify(c).toLowerCase().includes(query)) });
++      return response(200, { contacts:[...contacts.values()].filter((c) => {
++        const splitName=`${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
++        return JSON.stringify(c).toLowerCase().includes(query) || splitName.includes(query);
++      }) });
+     }
+     if (method === 'POST' && parsed.pathname === '/contacts/') {
+       const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+@@ -78,3 +81,67 @@
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.equal(new URL(`https://example.test${searches[0].path}`).searchParams.get('query'), 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+ succeeded in 1444ms:
+
+> reason-to-reach-out-stage1@1.0.0 test
+> node --test --test-concurrency=1
+
+TAP version 13
+# Subtest: tests/backend.test.js
+ok 1 - tests/backend.test.js
+  ---
+  duration_ms: 140.775164
+  type: 'test'
+  ...
+# Subtest: tests/core.test.js
+ok 2 - tests/core.test.js
+  ---
+  duration_ms: 97.044242
+  type: 'test'
+  ...
+# Subtest: tests/ghl.test.js
+ok 3 - tests/ghl.test.js
+  ---
+  duration_ms: 312.881314
+  type: 'test'
+  ...
+# Subtest: tests/hermes.test.js
+ok 4 - tests/hermes.test.js
+  ---
+  duration_ms: 82.789514
+  type: 'test'
+  ...
+# Subtest: tests/public.test.js
+ok 5 - tests/public.test.js
+  ---
+  duration_ms: 92.469494
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 756.594288
+ M README_STAGE1.md
+ M backend/ghl.js
+ M tests/ghl.test.js
+?? logs/codex-ghl-live-fix.log
+?? logs/ghl-live-defects-red.log
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093b..f6d8aaf 100644
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@ Do not substitute an `airstrikemarketing.us` address.
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea..2c58eb9 100644
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@ import { sanitizeSource } from './core.js';
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,12 +41,20 @@ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
++  }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
+   }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+@@ -43,7 +67,7 @@ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161..2ccc259 100644
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -15,7 +15,10 @@ function mockGhl(seed = []) {
+     const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+     if (method === 'GET' && parsed.pathname === '/contacts/') {
+       const query = (parsed.searchParams.get('query') || '').toLowerCase();
+-      return response(200, { contacts:[...contacts.values()].filter((c) => JSON.stringify(c).toLowerCase().includes(query)) });
++      return response(200, { contacts:[...contacts.values()].filter((c) => {
++        const splitName=`${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
++        return JSON.stringify(c).toLowerCase().includes(query) || splitName.includes(query);
++      }) });
+     }
+     if (method === 'POST' && parsed.pathname === '/contacts/') {
+       const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+@@ -78,3 +81,67 @@ test('write/readback failure rejects the relay operation', async () => {
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
+ });
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.equal(new URL(`https://example.test${searches[0].path}`).searchParams.get('query'), 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
++});
+
+apply patch
+patch: completed
+/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..11d7527d82c3e66779d164a29d50f26a23f0e2c2
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -15,7 +15,10 @@
+     const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+     if (method === 'GET' && parsed.pathname === '/contacts/') {
+       const query = (parsed.searchParams.get('query') || '').toLowerCase();
+-      return response(200, { contacts:[...contacts.values()].filter((c) => JSON.stringify(c).toLowerCase().includes(query)) });
++      return response(200, { contacts:[...contacts.values()].filter((c) => {
++        const splitName=`${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
++        return JSON.stringify(c).toLowerCase().includes(query) || splitName.includes(query);
++      }) });
+     }
+     if (method === 'POST' && parsed.pathname === '/contacts/') {
+       const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+@@ -77,4 +80,69 @@
+   };
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
++  assert.equal(mock.calls.filter((call) => call.method === 'GET' && call.path === '/contacts/c1').length, 3);
++});
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.equal(new URL(`https://example.test${searches[0].path}`).searchParams.get('query'), 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
+ });
+
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..11d7527d82c3e66779d164a29d50f26a23f0e2c2
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -15,7 +15,10 @@
+     const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+     if (method === 'GET' && parsed.pathname === '/contacts/') {
+       const query = (parsed.searchParams.get('query') || '').toLowerCase();
+-      return response(200, { contacts:[...contacts.values()].filter((c) => JSON.stringify(c).toLowerCase().includes(query)) });
++      return response(200, { contacts:[...contacts.values()].filter((c) => {
++        const splitName=`${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
++        return JSON.stringify(c).toLowerCase().includes(query) || splitName.includes(query);
++      }) });
+     }
+     if (method === 'POST' && parsed.pathname === '/contacts/') {
+       const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+@@ -77,4 +80,69 @@
+   };
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
++  assert.equal(mock.calls.filter((call) => call.method === 'GET' && call.path === '/contacts/c1').length, 3);
++});
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.equal(new URL(`https://example.test${searches[0].path}`).searchParams.get('query'), 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
+ });
+
+exec
+/bin/bash -lc "npm test && find backend public tests -type f -name '*.js' -print0 | xargs -0 -n1 node --check && git diff --check" in /root/ai-surfer-assets/projects/reason-to-reach-out-public
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..11d7527d82c3e66779d164a29d50f26a23f0e2c2
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -15,7 +15,10 @@
+     const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+     if (method === 'GET' && parsed.pathname === '/contacts/') {
+       const query = (parsed.searchParams.get('query') || '').toLowerCase();
+-      return response(200, { contacts:[...contacts.values()].filter((c) => JSON.stringify(c).toLowerCase().includes(query)) });
++      return response(200, { contacts:[...contacts.values()].filter((c) => {
++        const splitName=`${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
++        return JSON.stringify(c).toLowerCase().includes(query) || splitName.includes(query);
++      }) });
+     }
+     if (method === 'POST' && parsed.pathname === '/contacts/') {
+       const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+@@ -77,4 +80,69 @@
+   };
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
++  assert.equal(mock.calls.filter((call) => call.method === 'GET' && call.path === '/contacts/c1').length, 3);
++});
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.equal(new URL(`https://example.test${searches[0].path}`).searchParams.get('query'), 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
+ });
+
+ succeeded in 1414ms:
+
+> reason-to-reach-out-stage1@1.0.0 test
+> node --test --test-concurrency=1
+
+TAP version 13
+# Subtest: tests/backend.test.js
+ok 1 - tests/backend.test.js
+  ---
+  duration_ms: 123.498125
+  type: 'test'
+  ...
+# Subtest: tests/core.test.js
+ok 2 - tests/core.test.js
+  ---
+  duration_ms: 86.641492
+  type: 'test'
+  ...
+# Subtest: tests/ghl.test.js
+ok 3 - tests/ghl.test.js
+  ---
+  duration_ms: 323.858224
+  type: 'test'
+  ...
+# Subtest: tests/hermes.test.js
+ok 4 - tests/hermes.test.js
+  ---
+  duration_ms: 87.082261
+  type: 'test'
+  ...
+# Subtest: tests/public.test.js
+ok 5 - tests/public.test.js
+  ---
+  duration_ms: 82.831853
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 734.784101
+
+codex
+Implemented both live-GHL fixes.
+
+- Anonymous contacts now use the reserved `.invalid` email, search by exact email first, and fall back to case-insensitive legacy-name matching.
+- Added bounded retries for 429/5xx responses: three attempts maximum, exponential delay, capped `Retry-After`.
+- Other 4xx responses are never retried.
+- Added mock regressions for lowercase GHL normalization, repeated anonymous reuse, legacy adoption, 500 recovery, 400 rejection, and retry bounds.
+- Updated README verification notes.
+- Saved the expected failing run to [ghl-live-defects-red.log](/root/ai-surfer-assets/projects/reason-to-reach-out-public/logs/ghl-live-defects-red.log).
+
+Verification passed:
+
+- `npm test`
+- `node --check` on all backend, public, and test JavaScript
+- `git diff --check`
+
+No live GHL calls were made.
+diff --git a/README_STAGE1.md b/README_STAGE1.md
+index 745093bd5c790d3e6db66413b46411135696904f..f6d8aaff2e341bffd1c64198f460677e8c1defb2
+--- a/README_STAGE1.md
++++ b/README_STAGE1.md
+@@ -29,6 +29,7 @@
+ - Prospect context goes only to `/api/rtro/generate`; event validation rejects prospect fields, generated scripts/plans, and unknown keys.
+ - PDF creation is local. Lead capture relay failure is non-blocking and logs a browser warning.
+ - `logs/hardening-red.log` records this hardening pass's expected pre-implementation RED run. No logs or test artifacts live under `public/`.
++- `logs/ghl-live-defects-red.log` records the expected RED run for the live-GHL defect regressions. Anonymous activity now resolves by a reserved non-deliverable email before a case-insensitive legacy-name fallback, and LeadConnector 429/5xx responses receive at most three attempts with capped backoff; other 4xx responses are not retried.
+ - Browser automation was not added because Playwright is not present; static, service, validation, CORS, rate-limit, scan, and normalization checks run under Node.
+-- The suite contains 24 tests, including mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
++- The suite includes mock-fetch LeadConnector adapter coverage; automated tests never contact live GHL.
+ - No deployment, proxy, process-manager, OS, or Cloudflare configuration is performed here.
+diff --git a/backend/ghl.js b/backend/ghl.js
+index 85c74ea69ff32e691f9fdd9fff5752da6e9f64cd..2c58eb98ef44b31ee6aa7320d8332a177cc26e92
+--- a/backend/ghl.js
++++ b/backend/ghl.js
+@@ -3,16 +3,32 @@
+ const API = 'https://services.leadconnectorhq.com';
+ const UA = 'Mozilla/5.0 (compatible; ReasonToReachOut/1.0; +https://reasontoreachout.com)';
+ const anonymousName = 'RTRO Anonymous Feedback';
++const anonymousEmail = 'rtro-anonymous-feedback@reasontoreachout.invalid';
++const maxAttempts = 3;
++const retryBaseMs = 50;
++const retryWaitCapMs = 1_000;
+ 
+ export function createGhlAdapter({ apiKey = process.env.GHL_API_KEY, locationId = process.env.GHL_LOCATION_ID, fetchImpl = fetch, testMode = process.env.RTRO_TEST_MODE === '1' } = {}) {
+   const sessionSummaries = new Map();
+   if (testMode) return { record: async (event) => ({ testMode:true, accepted:event.type }) };
+   if (!apiKey || !locationId) return { record:async()=>{ throw new Error('GHL integration is not configured.'); } };
+   const headers = { Authorization:`Bearer ${apiKey}`, Version:'2021-07-28', 'Content-Type':'application/json', Accept:'application/json', 'User-Agent':UA };
++  const retryAfterMs = (response) => {
++    const value=response.headers?.get?.('retry-after');
++    if (!value) return null;
++    const seconds=Number(value);
++    const wait=Number.isFinite(seconds) ? seconds * 1_000 : Date.parse(value) - Date.now();
++    return Number.isFinite(wait) ? Math.max(0,Math.min(wait,retryWaitCapMs)) : null;
++  };
+   async function request(path, options={}) {
+-    const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
+-    if (!response.ok) throw new Error(`LeadConnector ${response.status}`);
+-    return response.status === 204 ? {} : response.json();
++    for (let attempt=1; attempt<=maxAttempts; attempt += 1) {
++      const response = await fetchImpl(`${API}${path}`, { ...options, headers:{ ...headers, ...options.headers } });
++      if (response.ok) return response.status === 204 ? {} : response.json();
++      const retryable=response.status === 429 || response.status >= 500 && response.status <= 599;
++      if (!retryable || attempt === maxAttempts) throw new Error(`LeadConnector ${response.status}`);
++      const wait=retryAfterMs(response) ?? retryBaseMs * (2 ** (attempt - 1));
++      await new Promise((resolve)=>setTimeout(resolve,wait));
++    }
+   }
+   const tagsFor = (event) => {
+     const tags=[];
+@@ -25,13 +41,21 @@
+     if (event.type === 'contact_click') tags.push(event.target === 'mailbox_power' ? 'RTRO - Clicked Mailbox Power' : 'RTRO - Clicked Contact');
+     return [...new Set(tags)];
+   };
+-  async function findExact(event) {
+-    const queryValue=event.email || anonymousName;
++  async function searchContacts(queryValue) {
+     const query=new URLSearchParams({ locationId, query:queryValue, limit:'100' });
+-    const data=await request(`/contacts/?${query}`);
+-    if (event.email) return data.contacts?.find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
+-    return data.contacts?.find((contact)=>contact.name === anonymousName || (contact.firstName === 'RTRO Anonymous' && contact.lastName === 'Feedback'));
++    return (await request(`/contacts/?${query}`)).contacts || [];
+   }
++  async function findExact(event) {
++    if (event.email) return (await searchContacts(event.email)).find((contact)=>String(contact.email || '').toLowerCase() === event.email.toLowerCase());
++    const reserved=(await searchContacts(anonymousEmail)).find((contact)=>String(contact.email || '').toLowerCase() === anonymousEmail);
++    if (reserved) return reserved;
++    const expected=anonymousName.toLowerCase();
++    return (await searchContacts(anonymousName)).find((contact)=>{
++      const fullName=String(contact.name || '').trim().toLowerCase();
++      const splitName=`${contact.firstName || ''} ${contact.lastName || ''}`.trim().toLowerCase();
++      return fullName === expected || splitName === expected;
++    });
++  }
+   async function readContact(id) {
+     const result=await request(`/contacts/${id}`);
+     if (result.contact?.id !== id) throw new Error('LeadConnector contact readback mismatch.');
+@@ -43,7 +67,7 @@
+     if (!contact) {
+       const body=event.email
+         ? { locationId, firstName:event.firstName || 'RTRO User', email:event.email, companyName:event.company || '', source:sanitizeSource(event.source), tags }
+-        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', source:'Reason to Reach Out', tags };
++        : { locationId, name:anonymousName, firstName:'RTRO Anonymous', lastName:'Feedback', email:anonymousEmail, source:'Reason to Reach Out', tags };
+       contact=(await request('/contacts/', { method:'POST', body:JSON.stringify(body) })).contact;
+       if (!contact?.id) throw new Error('LeadConnector contact create returned no target.');
+       return readContact(contact.id);
+diff --git a/tests/ghl.test.js b/tests/ghl.test.js
+index d721161f183ba2605659405cb922a872a88420f8..11d7527d82c3e66779d164a29d50f26a23f0e2c2
+--- a/tests/ghl.test.js
++++ b/tests/ghl.test.js
+@@ -15,7 +15,10 @@
+     const response = (status, value) => ({ ok:status >= 200 && status < 300, status, json:async()=>value });
+     if (method === 'GET' && parsed.pathname === '/contacts/') {
+       const query = (parsed.searchParams.get('query') || '').toLowerCase();
+-      return response(200, { contacts:[...contacts.values()].filter((c) => JSON.stringify(c).toLowerCase().includes(query)) });
++      return response(200, { contacts:[...contacts.values()].filter((c) => {
++        const splitName=`${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
++        return JSON.stringify(c).toLowerCase().includes(query) || splitName.includes(query);
++      }) });
+     }
+     if (method === 'POST' && parsed.pathname === '/contacts/') {
+       const contact = { ...body, id:`c${++contactNumber}` }; contacts.set(contact.id, contact); return response(201, { contact });
+@@ -77,4 +80,69 @@
+   };
+   const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
+   await assert.rejects(adapter.record(event({ email:'new@example.com' })), /LeadConnector 500/);
++  assert.equal(mock.calls.filter((call) => call.method === 'GET' && call.path === '/contacts/c1').length, 3);
++});
++
++test('lowercased anonymous contacts are reused by their reserved email', async () => {
++  const mock = mockGhl();
++  const fetchImpl = async (url, options = {}) => {
++    const parsed = new URL(url);
++    if ((options.method || 'GET') === 'POST' && parsed.pathname === '/contacts/') {
++      const body = JSON.parse(options.body);
++      options = {
++        ...options,
++        body:JSON.stringify({ ...body, name:null, firstName:'rtro', lastName:'anonymous feedback' })
++      };
++    }
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'Yes' }));
++  await adapter.record(event({ type:'channel_viewed', channel:'Call' }));
++
++  const creates = mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/');
++  assert.equal(creates.length, 1);
++  assert.equal(creates[0].body.email, 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(mock.contacts.size, 1);
++  assert.ok(mock.calls.filter((call) => call.method === 'POST' && /\/notes$/.test(call.path)).every((call) => call.path === '/contacts/c1/notes'));
++});
++
++test('case-insensitive legacy anonymous name fallback adopts an existing contact', async () => {
++  const mock = mockGhl([{ id:'legacy', name:null, firstName:'rtro', lastName:'anonymous feedback', tags:[] }]);
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl:mock.fetchImpl });
++
++  await adapter.record(event({ type:'feedback', answer:'No' }));
++
++  assert.equal(mock.calls.filter((call) => call.method === 'POST' && call.path === '/contacts/').length, 0);
++  assert.ok(mock.calls.some((call) => call.method === 'POST' && call.path === '/contacts/legacy/notes'));
++  const searches = mock.calls.filter((call) => call.method === 'GET' && call.path.startsWith('/contacts/?'));
++  assert.equal(new URL(`https://example.test${searches[0].path}`).searchParams.get('query'), 'rtro-anonymous-feedback@reasontoreachout.invalid');
++  assert.equal(new URL(`https://example.test${searches[1].path}`).searchParams.get('query'), 'RTRO Anonymous Feedback');
++});
++
++test('transient 500 is retried and then succeeds', async () => {
++  const mock = mockGhl();
++  let attempts = 0;
++  const fetchImpl = async (url, options) => {
++    if (attempts++ === 0) return { ok:false, status:500, headers:new Headers(), json:async()=>({}) };
++    return mock.fetchImpl(url, options);
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await adapter.record(event({ email:'retry@example.com' }));
++
++  assert.equal(attempts, 6);
++});
++
++test('validation 400 is not retried', async () => {
++  let attempts = 0;
++  const fetchImpl = async () => {
++    attempts += 1;
++    return { ok:false, status:400, headers:new Headers(), json:async()=>({}) };
++  };
++  const adapter = createGhlAdapter({ apiKey:'test', locationId:'loc', fetchImpl });
++
++  await assert.rejects(adapter.record(event({ email:'invalid@example.com' })), /LeadConnector 400/);
++  assert.equal(attempts, 1);
+ });
+
+tokens used
+28,844
+Implemented both live-GHL fixes.
+
+- Anonymous contacts now use the reserved `.invalid` email, search by exact email first, and fall back to case-insensitive legacy-name matching.
+- Added bounded retries for 429/5xx responses: three attempts maximum, exponential delay, capped `Retry-After`.
+- Other 4xx responses are never retried.
+- Added mock regressions for lowercase GHL normalization, repeated anonymous reuse, legacy adoption, 500 recovery, 400 rejection, and retry bounds.
+- Updated README verification notes.
+- Saved the expected failing run to [ghl-live-defects-red.log](/root/ai-surfer-assets/projects/reason-to-reach-out-public/logs/ghl-live-defects-red.log).
+
+Verification passed:
+
+- `npm test`
+- `node --check` on all backend, public, and test JavaScript
+- `git diff --check`
+
+No live GHL calls were made.

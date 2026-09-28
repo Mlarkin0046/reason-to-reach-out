@@ -1,0 +1,5 @@
+Fix one live GHL race found during verification. Use TDD first and save RED output in logs/ghl-tag-race-red.log.
+
+Observed: feedback added `RTRO - Feedback: Yes`, then an immediate wording_copied event replaced the contact's tag array from a stale contact-search snapshot, removing the feedback tag. Do not update an existing contact by PUT-replacing all tags.
+
+Change existing-contact tagging to the LeadConnector additive tag endpoint `POST /contacts/{contactId}/tags` with `{tags:[...]}`. Then GET `/contacts/{contactId}` and verify every requested tag is present case-insensitively. Preserve contact creation tags. Add a mock test where the search result is stale and two sequential event writes still leave both tags. Update the mock router for the additive tag endpoint. Keep retry policy, notes, readbacks, anonymous reuse, and all other behavior. Run full tests and node --check. Do not call live GHL from tests and do not deploy.

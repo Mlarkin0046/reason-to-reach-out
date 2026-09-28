@@ -1,0 +1,84 @@
+TAP version 13
+# Subtest: anonymous and known events use exact contacts, notes, tags, and readbacks
+ok 1 - anonymous and known events use exact contacts, notes, tags, and readbacks
+  ---
+  duration_ms: 7.017999
+  type: 'test'
+  ...
+# Subtest: additive tagging preserves sequential event tags when contact search is stale
+not ok 2 - additive tagging preserves sequential event tags when contact search is stale
+  ---
+  duration_ms: 3.605967
+  type: 'test'
+  location: '/root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:69:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+        'RTRO - Copied Wording',
+    -   'RTRO - Feedback: Yes',
+        'RTRO - Source: Spring Campaign'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'RTRO - Copied Wording'
+    1: 'RTRO - Feedback: Yes'
+    2: 'RTRO - Source: Spring Campaign'
+  actual:
+    0: 'RTRO - Copied Wording'
+    1: 'RTRO - Source: Spring Campaign'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///root/ai-surfer-assets/projects/reason-to-reach-out-public/tests/ghl.test.js:85:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: lead capture uses sanitized source and writes structured app-user-only note
+ok 3 - lead capture uses sanitized source and writes structured app-user-only note
+  ---
+  duration_ms: 1.161934
+  type: 'test'
+  ...
+# Subtest: write/readback failure rejects the relay operation
+ok 4 - write/readback failure rejects the relay operation
+  ---
+  duration_ms: 152.605206
+  type: 'test'
+  ...
+# Subtest: lowercased anonymous contacts are reused by their reserved email
+ok 5 - lowercased anonymous contacts are reused by their reserved email
+  ---
+  duration_ms: 1.915862
+  type: 'test'
+  ...
+# Subtest: case-insensitive legacy anonymous name fallback adopts an existing contact
+ok 6 - case-insensitive legacy anonymous name fallback adopts an existing contact
+  ---
+  duration_ms: 1.073547
+  type: 'test'
+  ...
+# Subtest: transient 500 is retried and then succeeds
+ok 7 - transient 500 is retried and then succeeds
+  ---
+  duration_ms: 81.426091
+  type: 'test'
+  ...
+# Subtest: validation 400 is not retried
+ok 8 - validation 400 is not retried
+  ---
+  duration_ms: 0.577355
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 7
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 258.341039

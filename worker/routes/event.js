@@ -1,0 +1,6 @@
+import { validateEvent } from '../lib/core.js';
+import { verifyProofToken } from '../lib/verification.js';
+import { createGhlAdapter } from '../lib/ghl.js';
+import { json,preflight,guard,readJson,validationError,createRateLimiter,clientKey,allowRequest } from '../lib/http.js';
+const limit=createRateLimiter(60);
+export async function onRequest({request,env}){const early=preflight(request)||guard(request);if(early)return early;const origin=request.headers.get('origin')||'';if(!await allowRequest(env.EVENT_RATE_LIMIT,limit,clientKey(request)))return json(429,{error:'Too many requests. Please try again later.'},origin);try{const event=validateEvent(await readJson(request));if(event.email){const valid=await verifyProofToken(event.verificationToken,event.email,env,{now:env.RTRO_NOW||Date.now});if(!valid)return json(401,{error:'Email verification is required.'},origin);}delete event.verificationToken;const ghl=env.RTRO_GHL_ADAPTER||createGhlAdapter({env,fetchImpl:env.RTRO_FETCH||fetch});await ghl.record(event);return json(202,{ok:true},origin);}catch(error){return json(validationError(error)?400:502,{error:validationError(error)?error.message:'Event relay is temporarily unavailable. Please try again.'},origin);}}
