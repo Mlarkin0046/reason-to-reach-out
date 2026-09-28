@@ -17,6 +17,8 @@ Configure these non-secret variables for both Production and Preview:
 
 - `GHL_LOCATION_ID` — the target GoHighLevel location ID.
 - `RTRO_EMAIL_FROM` — a Resend-verified sender, such as `Reason to Reach Out <verify@your-verified-domain>`.
+- `RTRO_NOTIFICATION_FROM` — the Resend-verified sender for internal lead notifications.
+- `RTRO_NOTIFICATION_TO` — the internal recipient for verified-lead notifications.
 - `RTRO_AI_MODEL` — optional OpenRouter model override; default is `openai/gpt-4.1-mini`.
 - `RTRO_CF_AI_MODEL` — optional Workers AI model override; default is `@cf/meta/llama-3.1-8b-instruct`.
 
@@ -43,7 +45,7 @@ Keep `public/app.js` configured with `API_BASE=https://api.reasontoreachout.com`
 
 1. Commit and push only after reviewing the diff and confirming `npm test` and the JavaScript syntax checks pass. This repository task intentionally does not push or deploy.
 2. In Cloudflare, keep Pages static with output directory `public` and no Pages Functions. On `reason-to-reach-out-api`, add encrypted secrets, non-secret variables, `AI`, and all four native rate-limit bindings.
-3. Deploy the API explicitly with `npx wrangler deploy --config wrangler.worker.toml`, then deploy the separate Pages project. Binding or secret changes require a Worker redeploy.
+3. Deploy the API explicitly with `npx wrangler deploy --config wrangler.worker.toml`, then deploy the separate Pages project. Binding or secret changes require a Worker redeploy. After deployment, read back the Worker configuration and confirm `RTRO_NOTIFICATION_FROM` and `RTRO_NOTIFICATION_TO` are present with the intended environment-specific values before testing a verified lead; do not print or copy secret values during this check.
 4. From a branch preview, use the fictional example, generate a plan, and exercise `OPTIONS` plus each Worker `/api/rtro/*` endpoint. Confirm the preview origin receives its exact `Access-Control-Allow-Origin` value.
 5. Request a verification code using a controlled inbox. Confirm neither the HTTP response nor Cloudflare logs reveal the code. Try a wrong code, then the delivered code. Confirm a PDF downloads only after `/event` returns `202`.
 6. In a non-production GHL test contact, verify the exact `RTRO - ...` tags and structured note, and confirm no prospect name, role, situation, priority, trigger, scripts, or plan appears in GHL. Confirm no workflow enrollment occurs.

@@ -1,4 +1,5 @@
-Last checkpoint: final pre-deployment blockers were addressed for the static Pages plus standalone Worker design. Nothing was pushed or deployed.
+Last checkpoint: verified-lead email notifications are implemented and independently reviewed. After a verified `lead_capture` succeeds in GHL, the Worker schedules one idempotent Resend alert to Mike, containing only approved app-user metadata; failures are privacy-safe, logged generically, and never block the PDF response. The full suite passes 88/88.
+Next: commit the verified feature, configure the two non-secret Worker variables, deploy, then run one controlled live end-to-end lead capture and read back both the email and GHL side effects.
 
 Final design:
 - Cloudflare Pages serves only `public/`; there is no reserved root `functions/` directory and therefore no Pages API surface.

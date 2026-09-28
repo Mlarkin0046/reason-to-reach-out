@@ -9,7 +9,7 @@ import { createGhlAdapter } from '../worker/lib/ghl.js';
 import { createRateLimiter } from '../worker/lib/http.js';
 
 const origin='https://branch.reason-to-reach-out.pages.dev';
-const env={ RTRO_VERIFICATION_SECRET:'a-test-secret-that-is-long-enough' };
+const env={ RTRO_VERIFICATION_SECRET:'a-test-secret-that-is-long-enough',RTRO_NOTIFICATION_LOGGER:()=>{} };
 const event={ type:'lead_capture',sessionId:'session-12345678',timestamp:'2026-09-28T12:00:00.000Z',source:'Campaign / West!',firstName:'Avery',email:'owner@example.com',company:'Sender Co',consent:false,selectedPlay:'Decision guide',channel:'Email' };
 const context=(request,extraEnv={})=>({request,env:{...env,...extraEnv}});
 const post=(path,body,headers={})=>new Request(`https://api.reasontoreachout.com${path}`,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
